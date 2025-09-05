@@ -11,6 +11,7 @@ export interface IRecurring extends Document {
   isActive: boolean;
   startDate?: Date;
   endDate?: Date | null;
+  installments?: number | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -25,6 +26,7 @@ const RecurringSchema = new Schema<IRecurring>({
   isActive: { type: Boolean, default: true },
   startDate: { type: Date },
   endDate: { type: Date, default: null },
+  installments: { type: Number, default: null },
 }, { timestamps: true });
 
 export default mongoose.model<IRecurring>('Recurring', RecurringSchema);

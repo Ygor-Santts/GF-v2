@@ -41,59 +41,41 @@ router.delete('/:id', async (req, res) => {
 });
 
 router.post('/generate', async (req, res) => {
-  const fromYear = Number(req.query.year);
-  const fromMonth = Number(req.query.month);
-  const toYear = req.query.toYear ? Number(req.query.toYear) : undefined;
-  const toMonth = req.query.toMonth ? Number(req.query.toMonth) : undefined;
-  if (isNaN(fromYear) || isNaN(fromMonth)) return res.status(400).json({ error: 'year and month are required' });
+  const year = Number(req.query.year);
+  const month = Number(req.query.month);
+  if (isNaN(year) || isNaN(month)) return res.status(400).json({ error: 'year and month are required' });
 
   const fins = await Financing.find({ isActive: true }).lean();
+  let upserts = 0;
 
-  const ymToNum = (y: number, m: number) => y * 12 + (m - 1);
-  const addMonths = (d: Date, months: number) => new Date(d.getFullYear(), d.getMonth() + months, d.getDate());
-
-  let totalCreated = 0;
   for (const f of fins as any[]) {
-    const start = new Date(f.startDate);
-    const startYm = ymToNum(start.getFullYear(), start.getMonth() + 1);
-    const lastDate = addMonths(start, f.totalInstallments - 1);
-    const lastYm = ymToNum(lastDate.getFullYear(), lastDate.getMonth() + 1);
+    const day = new Date(f.startDate).getDate();
+    const dom = Math.min(day, new Date(year, month, 0).getDate());
+    const date = new Date(year, month - 1, dom);
 
-    const rangeStartYm = Math.max(ymToNum(fromYear, fromMonth), startYm);
-    const rangeEndYm = (() => {
-      if (!isNaN(Number(toYear)) && !isNaN(Number(toMonth))) {
-        return Math.min(ymToNum(Number(toYear), Number(toMonth)), lastYm);
-      }
-      return lastYm;
-    })();
+    const filter = {
+      year, month,
+      type: 'EXPENSE',
+      linkedFinancing: f._id,
+      description: `${f.name} - Parcela`,
+      isFixed: true,
+    };
 
-    for (let ym = rangeStartYm; ym <= rangeEndYm; ym++) {
-      const y = Math.floor(ym / 12);
-      const m = (ym % 12) + 1;
-
-      const exists = await Transaction.findOne({ linkedFinancing: f._id, year: y, month: m }).lean();
-      if (exists) continue;
-
-      const day = start.getDate();
-      const daysInMonth = new Date(y, m, 0).getDate();
-      const dom = Math.min(day, daysInMonth);
-      const date = new Date(y, m - 1, dom);
-
-      await Transaction.create({
-        date, month: m, year: y,
-        type: 'EXPENSE',
+    const update = {
+      $setOnInsert: {
+        date,
         category: f.category || 'Financiamentos',
-        description: `${f.name} - Parcela`,
         plannedAmount: f.installmentAmount,
-        isFixed: true,
         account: f.account,
         status: 'PLANNED',
-        linkedFinancing: f._id,
-      });
-      totalCreated += 1;
-    }
+      }
+    };
+
+    const ret = await Transaction.updateOne(filter as any, update as any, { upsert: true });
+    if ((ret as any).upsertedCount === 1) upserts += 1;
   }
-  res.json({ created: totalCreated });
+
+  res.json({ createdOrKept: fins.length, insertedNew: upserts });
 });
 
 export default router;

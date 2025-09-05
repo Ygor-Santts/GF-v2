@@ -17,7 +17,6 @@ export interface ITransaction extends Document {
   tags?: string[];
   status?: TransactionStatus;
   linkedFinancing?: mongoose.Types.ObjectId | null;
-  linkedRecurring?: mongoose.Types.ObjectId | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -36,7 +35,6 @@ const TransactionSchema = new Schema<ITransaction>({
   tags: [{ type: String }],
   status: { type: String, enum: ['PLANNED', 'PAID'], default: 'PLANNED' },
   linkedFinancing: { type: Schema.Types.ObjectId, ref: 'Financing', default: null },
-  linkedRecurring: { type: Schema.Types.ObjectId, ref: 'Recurring', default: null },
 }, { timestamps: true });
 
 TransactionSchema.index({ year: 1, month: 1, type: 1 });

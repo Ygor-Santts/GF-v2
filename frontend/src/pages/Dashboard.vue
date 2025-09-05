@@ -3,23 +3,29 @@ import { ref, onMounted, watch } from 'vue';
 import api from '../api/http';
 
 const now = new Date();
-const year = ref(now.getFullYear());
-const month = ref(now.getMonth() + 1);
+const ym = ref(`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`);
+function getYear(){ return Number(ym.value.split('-')[0]); }
+function getMonth(){ return Number(ym.value.split('-')[1]); }
 const data = ref<any>(null);
 
 async function load() {
-  const res = await api.get('/api/reports/monthly', { params: { year: year.value, month: month.value } });
+  // garante geração do mês (idempotente)
+  const year = getYear(); const month = getMonth();
+  await Promise.allSettled([
+    api.post('/api/recurring/generate', null, { params: { year, month } }),
+    api.post('/api/financing/generate', null, { params: { year, month } }),
+  ]);
+  const res = await api.get('/api/reports/monthly', { params: { year, month } });
   data.value = res.data;
 }
 onMounted(load);
-watch([year, month], load);
+watch([ym], load);
 </script>
 
 <template>
   <div>
     <div class="controls">
-      <label>Ano: <input type="number" v-model.number="year"></label>
-      <label>Mês: <input type="number" v-model.number="month" min="1" max="12"></label>
+      <label>Mês: <input type="month" v-model="ym"></label>
       <button class="primary" @click="load">Atualizar</button>
     </div>
 

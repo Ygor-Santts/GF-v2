@@ -13,9 +13,9 @@ const recurringSchema = z.object({
   dayOfMonth: z.number().min(1).max(31),
   account: z.string().optional(),
   isActive: z.boolean().optional(),
-  startDate: z.string().optional(),
-  endDate: z.string().nullable().optional(),
-});
+    endDate: z.string().nullable().optional(),
+  installments: z.number().int().positive().nullable().optional(),
+  });
 
 router.get('/', async (_req, res) => {
   const list = await Recurring.find().lean();
@@ -48,70 +48,39 @@ router.delete('/:id', async (req, res) => {
 });
 
 router.post('/generate', async (req, res) => {
-  const fromYear = Number(req.query.year);
-  const fromMonth = Number(req.query.month);
-  const toYear = req.query.toYear ? Number(req.query.toYear) : undefined;
-  const toMonth = req.query.toMonth ? Number(req.query.toMonth) : undefined;
-  if (isNaN(fromYear) || isNaN(fromMonth)) return res.status(400).json({ error: 'year and month are required' });
+  const year = Number(req.query.year);
+  const month = Number(req.query.month);
+  if (isNaN(year) || isNaN(month)) return res.status(400).json({ error: 'year and month are required' });
 
   const recs = await Recurring.find({ isActive: true }).lean();
+  let upserts = 0;
 
-  const ymToNum = (y: number, m: number) => y * 12 + (m - 1);
-  const clampDay = (y: number, m: number, d: number) => Math.min(d, new Date(y, m, 0).getDate());
-
-  let totalCreated = 0;
   for (const r of recs as any[]) {
-    const start: Date | undefined = r.startDate ? new Date(r.startDate) : undefined;
-    const end: Date | null = r.endDate ? new Date(r.endDate) : null;
+    const day = Math.min(r.dayOfMonth, new Date(year, month, 0).getDate());
+    const date = new Date(year, month - 1, day);
 
-    const lowerYm = Math.max(
-      ymToNum(fromYear, fromMonth),
-      start ? ymToNum(start.getFullYear(), start.getMonth() + 1) : ymToNum(fromYear, fromMonth)
-    );
+    const filter = {
+      year, month,
+      type: r.type,
+      category: r.category,
+      description: r.name,
+      isFixed: true,
+    };
 
-    let upperYm: number;
-    if (!isNaN(Number(toYear)) && !isNaN(Number(toMonth))) {
-      upperYm = ymToNum(Number(toYear), Number(toMonth));
-    } else if (end) {
-      upperYm = ymToNum(end.getFullYear(), end.getMonth() + 1);
-    } else {
-      // default horizon: generate 12 months ahead
-      const baseYm = ymToNum(fromYear, fromMonth);
-      upperYm = baseYm + 11;
-    }
-
-    // if there is an endDate, cap at endDate
-    if (end) upperYm = Math.min(upperYm, ymToNum(end.getFullYear(), end.getMonth() + 1));
-
-    for (let ym = lowerYm; ym <= upperYm; ym++) {
-      const y = Math.floor(ym / 12);
-      const m = (ym % 12) + 1;
-
-      // de-duplicate by linkedRecurring + month/year
-      const exists = await Transaction.findOne({ linkedRecurring: r._id, year: y, month: m }).lean();
-      if (exists) continue;
-
-      const day = clampDay(y, m, r.dayOfMonth);
-      const date = new Date(y, m - 1, day);
-
-      await Transaction.create({
+    const update = {
+      $setOnInsert: {
         date,
-        month: m,
-        year: y,
-        type: r.type,
-        category: r.category,
-        description: r.name,
-        plannedAmount: r.amount,
         account: r.account,
-        isFixed: true,
-        status: 'PLANNED' as const,
-        linkedRecurring: r._id,
-      });
-      totalCreated += 1;
-    }
+        plannedAmount: r.amount,
+        status: 'PLANNED',
+      }
+    };
+
+    const ret = await Transaction.updateOne(filter as any, update as any, { upsert: true });
+    if ((ret as any).upsertedCount === 1) upserts += 1;
   }
 
-  res.json({ created: totalCreated });
+  res.json({ createdOrKept: recs.length, insertedNew: upserts });
 });
 
 export default router;

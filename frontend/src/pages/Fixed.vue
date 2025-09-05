@@ -13,6 +13,7 @@ type Recurring = {
   isActive?: boolean;
   startDate?: string;
   endDate?: string | null;
+  installments?: number | null;
 };
 
 const now = new Date();
@@ -26,6 +27,8 @@ const form = ref<Recurring>({
   category: '',
   amount: 0,
   dayOfMonth: 1,
+  startDate: new Date().toISOString().slice(0,10),
+  installments: null,
   isActive: true,
 });
 
@@ -85,6 +88,8 @@ async function genFinancing() {
         </select>
         <input placeholder="Categoria (ex.: Moradia)" v-model="form.category" />
         <input placeholder="Valor" type="number" step="0.01" v-model.number="form.amount" />
+        <input placeholder="Início" type="date" v-model="form.startDate" />
+        <input placeholder="Parcelas (vazio = infinito)" type="number" min="1" v-model.number="form.installments" />
         <input placeholder="Dia do mês" type="number" min="1" max="31" v-model.number="form.dayOfMonth" />
         <label><input type="checkbox" v-model="form.isActive" /> Ativo</label>
         <button class="primary" @click="createRecurring">Salvar Recorrente</button>

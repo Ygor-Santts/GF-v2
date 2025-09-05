@@ -16,17 +16,23 @@ type Tx = {
 };
 
 const now = new Date();
-const year = ref(now.getFullYear());
-const month = ref(now.getMonth() + 1);
+const ym = ref(`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`);
+function getYear(){ return Number(ym.value.split('-')[0]); }
+function getMonth(){ return Number(ym.value.split('-')[1]); }
 const list = ref<Tx[]>([]);
 
 async function load() {
-  const res = await api.get('/api/transactions', { params: { year: year.value, month: month.value } });
+  const year = getYear(); const month = getMonth();
+  await Promise.allSettled([
+    api.post('/api/recurring/generate', null, { params: { year, month } }),
+    api.post('/api/financing/generate', null, { params: { year, month } }),
+  ]);
+  const res = await api.get('/api/transactions', { params: { year, month } });
   list.value = res.data;
 }
 
 onMounted(load);
-watch([year, month], load);
+watch([ym], load);
 
 const form = ref<Tx>({
   date: new Date().toISOString().slice(0,10),
@@ -75,6 +81,12 @@ async function commitEdit() {
   await load();
 }
 
+async function pay(tx: Tx) {
+  const amount = (tx.amount ?? tx.plannedAmount ?? 0);
+  await api.post(`/api/transactions/${tx._id}/pay`, { amount });
+  await load();
+}
+
 async function remove(id?: string) {
   if (!id) return;
   if (!confirm('Remover esta transação?')) return;
@@ -86,8 +98,7 @@ async function remove(id?: string) {
 <template>
   <div>
     <div class="controls">
-      <label>Ano: <input type="number" v-model.number="year"></label>
-      <label>Mês: <input type="number" v-model.number="month" min="1" max="12"></label>
+      <label>Mês: <input type="month" v-model="ym"></label>
       <button class="primary" @click="load">Atualizar</button>
     </div>
 
@@ -163,8 +174,9 @@ async function remove(id?: string) {
               </td>
               <td>{{ tx.status }}</td>
               <td>
-                <button @click="startEdit(tx)">Editar</button>
-                <button @click="remove(tx._id)">Excluir</button>
+                <button class="clickable" @click="startEdit(tx)">Editar</button>
+                <button class="clickable" @click="pay(tx)">Pagar</button>
+                <button class="clickable" @click="remove(tx._id)">Excluir</button>
               </td>
             </template>
           </tr>

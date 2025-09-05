@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import Transaction from '../models/Transaction';
+import { ensureMonth } from '../services/ensureMonth';
 
 const router = Router();
 
@@ -24,6 +25,7 @@ router.get('/', async (req, res) => {
   const filter: any = {};
   if (!isNaN(year)) filter.year = year;
   if (!isNaN(month)) filter.month = month;
+  if (!isNaN(year) && !isNaN(month)) { await ensureMonth(year, month); }
   const txs = await Transaction.find(filter).sort({ date: 1 }).lean();
   res.json(txs);
 });
@@ -47,6 +49,14 @@ router.put('/:id', async (req, res) => {
   const parsed = txSchema.partial().safeParse(req.body);
   if (!parsed.success) return res.status(400).json(parsed.error);
   const updated = await Transaction.findByIdAndUpdate(id, parsed.data, { new: true });
+  res.json(updated);
+});
+
+router.post('/:id/pay', async (req, res) => {
+  const { id } = req.params;
+  const body = req.body || {};
+  const amount = typeof body.amount === 'number' ? body.amount : undefined;
+  const updated = await Transaction.findByIdAndUpdate(id, { status: 'PAID', ...(amount !== undefined ? { amount } : {}) }, { new: true });
   res.json(updated);
 });
 

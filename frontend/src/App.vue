@@ -29,4 +29,5 @@ body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helve
 .controls { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
 input, select, button { padding: 8px 10px; border-radius: 8px; border: 1px solid #e5e7eb; }
 button.primary { background: #111827; color: white; }
+.clickable { cursor: pointer; }
 </style>

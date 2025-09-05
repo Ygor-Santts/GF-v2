@@ -1,11 +1,11 @@
-# Gestão Financeira — Monorepo (API Node.js + MongoDB + Front Vue 3)
+# Gestão Financeira — API Node.js + MongoDB + Front Vue 3
 
-Agora com:
-- **Edição inline de Transações** (botão Editar na tabela)
-- **Cadastro e lista de Recorrentes (Fixos)** em **Fixos & Financiamentos**, com ativar/desativar e excluir
-- Geração mensal a partir dos Recorrentes e Financiamentos
+### Novidades
+- **Recorrentes/Financiamentos idempotentes**: gerar mês não duplica mais.
+- **Comportamento “todo mês”**: ao abrir Dashboard/Transações de um mês, o backend garante (gera se faltar) os lançamentos **Previstos** daquele mês.
+- **Edição inline** de transações.
 
-## Rodando
+## Como rodar
 ### Backend
 ```bash
 cd backend
@@ -23,7 +23,7 @@ npm run dev   # http://localhost:5173
 ## Endpoints principais
 - `GET/POST/PUT/DELETE /api/transactions`
 - `GET/POST/PUT/DELETE /api/recurring`
-- `POST /api/recurring/generate?year=YYYY&month=MM`
+- `POST /api/recurring/generate?year=YYYY&month=MM` (idempotente)
 - `GET/POST/PUT/DELETE /api/financing`
-- `POST /api/financing/generate?year=YYYY&month=MM`
+- `POST /api/financing/generate?year=YYYY&month=MM` (idempotente)
 - `GET /api/reports/monthly?year=YYYY&month=MM`
