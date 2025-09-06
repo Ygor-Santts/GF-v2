@@ -94,7 +94,7 @@ async function remove(id?: string) {
 
     <div class="card">
       <h3>Adicionar Transação</h3>
-      <div class="controls" style="flex-wrap: wrap;">
+      <div class="controls">
         <select v-model="form.type">
           <option value="INCOME">Renda</option>
           <option value="EXPENSE">Gasto</option>

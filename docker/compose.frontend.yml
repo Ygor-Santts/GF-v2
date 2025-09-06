@@ -1,0 +1,18 @@
+version: "3.8"
+services:
+  frontend:
+    build: ../frontend
+    container_name: gf-frontend
+    restart: unless-stopped
+    environment:
+      - VITE_API_URL=http://localhost:4000
+    ports:
+      - "5173:5173"
+    volumes:
+      - ../frontend:/app
+      - /app/node_modules
+    command: npm run dev
+
+networks:
+  default:
+    name: gf_net

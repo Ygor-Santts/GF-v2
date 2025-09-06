@@ -67,7 +67,7 @@ async function remove(r: Recurring) {
 <template>
   <div class="card">
     <h3>Novo Recorrente</h3>
-    <div class="controls" style="flex-wrap: wrap;">
+    <div class="controls">
       <input placeholder="Nome" v-model="form.name" />
       <select v-model="form.type">
         <option value="INCOME">Renda</option>

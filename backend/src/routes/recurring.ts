@@ -32,7 +32,7 @@ router.post('/', async (req, res) => {
     endDate: parsed.data.endDate ? new Date(parsed.data.endDate) : null,
   };
   const doc = await Recurring.create(payload);
-  await seedRecurringForward(doc); // auto
+  await seedRecurringForward(doc); // auto-gera meses à frente
   res.status(201).json(doc);
 });
 
@@ -44,7 +44,7 @@ router.put('/:id', async (req, res) => {
   if (patch.startDate) patch.startDate = new Date(patch.startDate);
   if (patch.endDate !== undefined && patch.endDate !== null) patch.endDate = new Date(patch.endDate);
   const updated = await Recurring.findByIdAndUpdate(id, patch, { new: true });
-  if (updated) await seedRecurringForward(updated); // auto
+  if (updated) await seedRecurringForward(updated); // re-semente
   res.json(updated);
 });
 

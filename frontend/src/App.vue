@@ -26,7 +26,7 @@ body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helve
 .badge.expense { background: #FEE2E2; color: #991B1B; }
 .positive { color: #16a34a; font-weight: 600; }
 .negative { color: #dc2626; font-weight: 600; }
-.controls { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+.controls { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
 input, select, button { padding: 8px 10px; border-radius: 8px; border: 1px solid #e5e7eb; }
 button.primary { background: #111827; color: white; }
 .clickable { cursor: pointer; }

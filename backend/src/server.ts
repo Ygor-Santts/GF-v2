@@ -4,12 +4,12 @@ import cors from 'cors';
 import morgan from 'morgan';
 import mongoose from 'mongoose';
 import cron from 'node-cron';
+import Transaction from './models/Transaction';
 
 import transactions from './routes/transactions';
 import recurring from './routes/recurring';
 import financing from './routes/financing';
 import reports from './routes/reports';
-import Transaction from './models/Transaction';
 
 const app = express();
 app.use(express.json());
@@ -36,7 +36,7 @@ mongoose.connect(MONGO_URI).then(() => {
   process.exit(1);
 });
 
-// Auto-pay daily at 03:00 (can disable with AUTO_PAY_CRON=false)
+// Auto-pay daily at 03:00 (disable with AUTO_PAY_CRON=false)
 async function autoPayDue() {
   const now = new Date();
   const endToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
