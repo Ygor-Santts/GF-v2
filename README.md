@@ -1,29 +1,21 @@
-# Gestão Financeira — API Node.js + MongoDB + Front Vue 3
+# GF-v2 (atualizado)
+- Seletor de período com `<input type="month">`
+- Editar recorrentes (inline)
+- Gerar recorrentes para todos os meses a partir do início (automático no salvar/editar)
+- `endDate` para término da cobrança
+- Sem necessidade de botão de "gerar fixos" ao salvar
 
-### Novidades
-- **Recorrentes/Financiamentos idempotentes**: gerar mês não duplica mais.
-- **Comportamento “todo mês”**: ao abrir Dashboard/Transações de um mês, o backend garante (gera se faltar) os lançamentos **Previstos** daquele mês.
-- **Edição inline** de transações.
-
-## Como rodar
+## Rodar
 ### Backend
 ```bash
 cd backend
 cp .env.example .env
 npm i
-npm run dev   # http://localhost:4000
+npm run dev
 ```
 ### Frontend
 ```bash
-cd ../frontend
+cd frontend
 npm i
-npm run dev   # http://localhost:5173
+npm run dev
 ```
-
-## Endpoints principais
-- `GET/POST/PUT/DELETE /api/transactions`
-- `GET/POST/PUT/DELETE /api/recurring`
-- `POST /api/recurring/generate?year=YYYY&month=MM` (idempotente)
-- `GET/POST/PUT/DELETE /api/financing`
-- `POST /api/financing/generate?year=YYYY&month=MM` (idempotente)
-- `GET /api/reports/monthly?year=YYYY&month=MM`

@@ -7,11 +7,11 @@ export interface IRecurring extends Document {
   category: string;
   amount: number;
   dayOfMonth: number;
-  account?: string;
-  isActive: boolean;
   startDate?: Date;
   endDate?: Date | null;
   installments?: number | null;
+  account?: string;
+  isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -22,11 +22,11 @@ const RecurringSchema = new Schema<IRecurring>({
   category: { type: String, required: true },
   amount: { type: Number, required: true },
   dayOfMonth: { type: Number, required: true, min: 1, max: 31 },
-  account: { type: String },
-  isActive: { type: Boolean, default: true },
   startDate: { type: Date },
   endDate: { type: Date, default: null },
   installments: { type: Number, default: null },
+  account: { type: String },
+  isActive: { type: Boolean, default: true },
 }, { timestamps: true });
 
 export default mongoose.model<IRecurring>('Recurring', RecurringSchema);

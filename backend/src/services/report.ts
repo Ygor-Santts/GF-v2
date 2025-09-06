@@ -33,13 +33,5 @@ export async function monthlyReport(year: number, month: number) {
   const netReal = incomeReal - expenseReal;
   const spendPct = incomeReal ? (expenseReal / incomeReal) * 100 : 0;
 
-  return {
-    year, month,
-    incomePlanned, incomeReal,
-    expensePlanned, expenseReal,
-    netPlanned, netReal,
-    spendPct,
-    byCategory, byType,
-    count: txs.length,
-  };
+  return { year, month, incomePlanned, incomeReal, expensePlanned, expenseReal, netPlanned, netReal, spendPct, byCategory, byType, count: txs.length };
 }

@@ -1,46 +1,45 @@
-version: "3.9"
-
 services:
   mongo:
-    image: mongo:7
+    image: mongo:6
     container_name: gf-mongo
     restart: unless-stopped
     ports:
-      - "27018:27017"
+      - "27017:27017"
     volumes:
       - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "mongodb://localhost:27017", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-  api:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: gf-api
+  backend:
+    build: ./backend
+    container_name: gf-backend
     restart: unless-stopped
-    env_file:
-      - ./backend/.env
-    environment:
-      - MONGO_URI=mongodb://mongo:27017/gestao_financeira
-      - PORT=4000
-      - CORS_ORIGIN=http://localhost:5173
-    depends_on:
-      - mongo
+    env_file: ./backend/.env
     ports:
       - "4000:4000"
-    command: sh -c "npm install && npm run dev"
-
-  web:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: gf-web
-    restart: unless-stopped
-    environment:
-      - VITE_API_URL=http://localhost:4000
     depends_on:
-      - api
+      mongo:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    command: npm run dev
+
+  frontend:
+    build: ./frontend
+    container_name: gf-frontend
+    restart: unless-stopped
     ports:
       - "5173:5173"
-    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    environment:
+      - VITE_API_URL=http://localhost:4000
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    command: npm run dev
 
 volumes:
   mongo_data:

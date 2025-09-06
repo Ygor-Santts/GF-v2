@@ -1,8 +1,9 @@
-FROM node:20-alpine
+FROM node:20
+
 WORKDIR /app
-COPY package*.json vite.config.ts ./
-COPY index.html ./
+COPY package*.json ./
 RUN npm install
-COPY src ./src
+COPY . .
+
 EXPOSE 5173
-CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+CMD ["npm", "run", "dev"]

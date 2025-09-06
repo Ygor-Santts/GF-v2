@@ -2,13 +2,14 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
-import cron from 'node-cron';
 import mongoose from 'mongoose';
+import cron from 'node-cron';
 
 import transactions from './routes/transactions';
 import recurring from './routes/recurring';
 import financing from './routes/financing';
 import reports from './routes/reports';
+import Transaction from './models/Transaction';
 
 const app = express();
 app.use(express.json());
@@ -34,15 +35,10 @@ mongoose.connect(MONGO_URI).then(() => {
   console.error('Mongo connect error', err);
   process.exit(1);
 });
-}
 
-
-// Auto-pay: mark PLANNED transactions whose date <= today as PAID at 03:00 daily
-import Transaction from './models/Transaction';
-
+// Auto-pay daily at 03:00 (can disable with AUTO_PAY_CRON=false)
 async function autoPayDue() {
   const now = new Date();
-  // Normalize to end of today 23:59:59 to be safe
   const endToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
   const due = await Transaction.find({ status: 'PLANNED', date: { $lte: endToday } }).lean();
   for (const t of due as any[]) {
@@ -52,8 +48,6 @@ async function autoPayDue() {
   if (due.length) console.log(`[autoPayDue] Marked ${due.length} as PAID`);
 }
 
-// Run daily at 03:00 server local time
 if (process.env.AUTO_PAY_CRON !== 'false') {
-cron.schedule('0 3 * * *', () => {
-  autoPayDue().catch(err => console.error('autoPayDue error', err));
-});
+  cron.schedule('0 3 * * *', () => { autoPayDue().catch(err => console.error('autoPayDue error', err)); });
+}
