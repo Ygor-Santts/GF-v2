@@ -16,9 +16,9 @@ type Tx = {
 };
 
 const now = new Date();
-const ym = ref(`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`);
-function getYear(){ return Number(ym.value.split('-')[0]); }
-function getMonth(){ return Number(ym.value.split('-')[1]); }
+const dateRef = ref(`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`);
+function function getYear(){ const d = new Date(dateRef.value); return d.getFullYear(); }
+function function getMonth(){ const d = new Date(dateRef.value); return d.getMonth() + 1; }
 const list = ref<Tx[]>([]);
 
 async function load() {
@@ -32,7 +32,7 @@ async function load() {
 }
 
 onMounted(load);
-watch([ym], load);
+watch([dateRef], load);
 
 const form = ref<Tx>({
   date: new Date().toISOString().slice(0,10),
@@ -98,7 +98,7 @@ async function remove(id?: string) {
 <template>
   <div>
     <div class="controls">
-      <label>Mês: <input type="month" v-model="ym"></label>
+      <label>Data de referência: <input type="date" v-model="dateRef"></label>
       <button class="primary" @click="load">Atualizar</button>
     </div>
 

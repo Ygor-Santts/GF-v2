@@ -3,9 +3,9 @@ import { ref, onMounted, watch } from 'vue';
 import api from '../api/http';
 
 const now = new Date();
-const ym = ref(`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`);
-function getYear(){ return Number(ym.value.split('-')[0]); }
-function getMonth(){ return Number(ym.value.split('-')[1]); }
+const dateRef = ref(`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`);
+function function getYear(){ const d = new Date(dateRef.value); return d.getFullYear(); }
+function function getMonth(){ const d = new Date(dateRef.value); return d.getMonth() + 1; }
 const data = ref<any>(null);
 
 async function load() {
@@ -19,13 +19,13 @@ async function load() {
   data.value = res.data;
 }
 onMounted(load);
-watch([ym], load);
+watch([dateRef], load);
 </script>
 
 <template>
   <div>
     <div class="controls">
-      <label>Mês: <input type="month" v-model="ym"></label>
+      <label>Data de referência: <input type="date" v-model="dateRef"></label>
       <button class="primary" @click="load">Atualizar</button>
     </div>
 

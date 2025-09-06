@@ -88,6 +88,12 @@ async function genRange() {
   await load();
 }
 
+async function genFinancingRange(){
+  if (!finFromYm.value || !finToYm.value) { alert('Preencha De/Até (YYYY-MM).'); return; }
+  await api.post('/api/financing/generate-range', null, { params: { from: finFromYm.value, to: finToYm.value } });
+  alert('Financiamentos gerados para o período!');
+}
+
 async function genFinancing() {
   await api.post('/api/financing/generate', null, { params: { year: year.value, month: month.value } });
   alert('Parcela(s) de financiamento geradas!');
@@ -197,6 +203,15 @@ async function genFinancing() {
         <label>De: <input type="month" v-model="fromYm" /></label>
         <label>Até: <input type="month" v-model="toYm" /></label>
         <button class="primary clickable" @click="genRecurringRange">Gerar Fixos no período</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Gerar Financiamentos para PERÍODO</h3>
+      <div class="controls" style="flex-wrap: wrap;">
+        <label>De: <input type="month" v-model="finFromYm" /></label>
+        <label>Até: <input type="month" v-model="finToYm" /></label>
+        <button class="primary clickable" @click="genFinancingRange">Gerar Financiamentos no período</button>
       </div>
     </div>
 
