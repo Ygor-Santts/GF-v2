@@ -10,8 +10,11 @@
       <template #actions>
         <div class="hidden md:block">
           <div class="bg-white/20 backdrop-blur-sm rounded-2xl p-4">
-            <Calendar class="w-8 h-8 text-white mb-2" />
-            <p class="text-sm text-blue-100">{{ currentDate }}</p>
+            <PeriodSelector
+              v-model="selectedPeriod"
+              @change="handlePeriodChange"
+              class="text-white"
+            />
           </div>
         </div>
       </template>
@@ -298,7 +301,14 @@
 import { ref, onMounted, nextTick, computed } from "vue";
 import { Chart, registerables } from "chart.js";
 import { useDashboardStore } from "../stores/dashboardStore";
-import { Button, Card, Badge, MetricCard, PageHeader } from "../components/ui";
+import {
+  Button,
+  Card,
+  Badge,
+  MetricCard,
+  PageHeader,
+  PeriodSelector,
+} from "../components/ui";
 import {
   BarChart2,
   RefreshCw,
@@ -331,6 +341,12 @@ const dashboardStore = useDashboardStore();
 // Local reactive data
 const selectedMonth = ref("");
 const categoryPeriod = ref("current");
+
+// Period selector
+const selectedPeriod = ref({
+  month: new Date().getMonth() + 1,
+  year: new Date().getFullYear(),
+});
 
 // Chart refs
 const monthlyChartCanvas = ref<HTMLCanvasElement>();
@@ -376,6 +392,12 @@ const currentDate = computed(() => {
     day: "numeric",
   });
 });
+
+// Period change handler
+const handlePeriodChange = async (period: { month: number; year: number }) => {
+  console.log("Period changed:", period);
+  await dashboardStore.fetchDashboardDataForPeriod(period.year, period.month);
+};
 
 // Methods
 const formatCurrency = (value: number) => {

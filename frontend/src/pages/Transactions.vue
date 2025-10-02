@@ -7,22 +7,24 @@
       :background-icon="CreditCard"
     >
       <template #actions>
-        <Select
-          v-model="selectedMonth"
-          @change="loadTransactions"
-          :options="availableMonths"
-          placeholder="Selecionar mês"
-          class="bg-white/20 backdrop-blur-sm border-white/30 text-white placeholder-white/70"
-        />
-        <Button
-          size="lg"
-          variant="secondary"
-          @click="showAddModal = true"
-          :icon="PlusIcon"
-          class="text-black border-black/30 hover:bg-black/20"
-        >
-          Nova Transação
-        </Button>
+        <div class="flex items-center space-x-4">
+          <div class="bg-white/20 backdrop-blur-sm rounded-2xl p-4">
+            <PeriodSelector
+              v-model="selectedPeriod"
+              @change="handlePeriodChange"
+              class="text-white"
+            />
+          </div>
+          <Button
+            size="lg"
+            variant="secondary"
+            @click="showAddModal = true"
+            :icon="PlusIcon"
+            class="text-black border-black/30 hover:bg-black/20"
+          >
+            Nova Transação
+          </Button>
+        </div>
       </template>
     </PageHeader>
 
@@ -351,6 +353,7 @@ import {
   PageHeader,
   Input,
   Select,
+  PeriodSelector,
 } from "../components/ui";
 import {
   CreditCard,
@@ -381,6 +384,12 @@ const transactionStore = useTransactionStore();
 const categories = ref<string[]>([]);
 const selectedMonth = ref("");
 const availableMonths = ref<Array<{ value: string; label: string }>>([]);
+
+// Period selector
+const selectedPeriod = ref({
+  month: new Date().getMonth() + 1,
+  year: new Date().getFullYear(),
+});
 const showAddModal = ref(false);
 const showEditModal = ref(false);
 const editingTransaction = ref<Transaction | null | undefined>(null);
@@ -501,6 +510,16 @@ const formatDate = (dateString: string) => {
 
 const getYear = () => Number(selectedMonth.value.split("-")[0]);
 const getMonth = () => Number(selectedMonth.value.split("-")[1]);
+
+// Period change handler
+const handlePeriodChange = async (period: { month: number; year: number }) => {
+  console.log("Period changed:", period);
+  // Atualizar selectedMonth para manter compatibilidade
+  selectedMonth.value = `${period.year}-${period.month
+    .toString()
+    .padStart(2, "0")}`;
+  await loadTransactions();
+};
 
 // Data loading
 const loadTransactions = async () => {

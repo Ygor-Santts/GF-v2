@@ -29,6 +29,8 @@ export interface ReportFilters {
   period?: "current" | "last3" | "last6" | "last12" | "custom";
   startDate?: string;
   endDate?: string;
+  year?: number;
+  month?: number;
   type?: "INCOME" | "EXPENSE";
   category?: string;
 }

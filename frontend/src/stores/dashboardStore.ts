@@ -97,6 +97,11 @@ export const useDashboardStore = defineStore("dashboard", () => {
     }
   };
 
+  // Buscar dados para período específico
+  const fetchDashboardDataForPeriod = async (year: number, month: number) => {
+    await fetchDashboardData({ year, month });
+  };
+
   const refreshDashboard = async () => {
     await fetchDashboardData();
   };
@@ -164,6 +169,7 @@ export const useDashboardStore = defineStore("dashboard", () => {
 
     // Actions
     fetchDashboardData,
+    fetchDashboardDataForPeriod,
     refreshDashboard,
     clearError,
     resetStore,

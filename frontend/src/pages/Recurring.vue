@@ -7,13 +7,22 @@
       :background-icon="RotateCcw"
     >
       <template #actions>
-        <Button
-          size="lg"
-          variant="secondary"
-          :icon="Plus"
-          text="Nova Recorrente"
-          @click="showAddModal = true"
-        />
+        <div class="flex items-center space-x-4">
+          <div class="bg-white/20 backdrop-blur-sm rounded-2xl p-4">
+            <PeriodSelector
+              v-model="selectedPeriod"
+              @change="handlePeriodChange"
+              class="text-white"
+            />
+          </div>
+          <Button
+            size="lg"
+            variant="secondary"
+            :icon="Plus"
+            text="Nova Recorrente"
+            @click="showAddModal = true"
+          />
+        </div>
       </template>
     </PageHeader>
 
@@ -143,7 +152,14 @@ import { ref, computed, onMounted } from "vue";
 import { useRecurringStore } from "../stores/recurringStore";
 import RecurringModal from "../components/RecurringModal.vue";
 import RecurringCard from "../components/RecurringCard.vue";
-import { Card, Button, MetricCard, PageHeader, Select } from "../components/ui";
+import {
+  Card,
+  Button,
+  MetricCard,
+  PageHeader,
+  Select,
+  PeriodSelector,
+} from "../components/ui";
 import {
   RotateCcw,
   Plus,
@@ -173,6 +189,12 @@ const showAddModal = ref(false);
 const showEditModal = ref(false);
 const editingRecurring = ref<RecurringTransaction | null>(null);
 const filterType = ref("");
+
+// Period selector
+const selectedPeriod = ref({
+  month: new Date().getMonth() + 1,
+  year: new Date().getFullYear(),
+});
 
 // Filter options
 const filterOptions = [
@@ -204,6 +226,16 @@ const recurringIncomeCount = computed(
 const recurringExpensesCount = computed(
   () => recurringStore.expenseRecurring.length
 );
+
+// Period change handler
+const handlePeriodChange = async (period: { month: number; year: number }) => {
+  console.log("Period changed:", period);
+  // Para transações recorrentes, o período selecionado pode ser usado para:
+  // 1. Filtrar transações que se aplicam ao período selecionado
+  // 2. Mostrar projeções para o período selecionado
+  // 3. Gerar transações para o período selecionado
+  // Por enquanto, apenas logamos a mudança
+};
 
 // Utility functions
 const formatCurrency = (value: number) => {

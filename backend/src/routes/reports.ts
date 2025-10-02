@@ -8,77 +8,168 @@ const router = Router();
 // GET /api/reports/dashboard - Dados completos do dashboard
 router.get("/dashboard", async (req, res) => {
   try {
-    const { period = "current", startDate, endDate } = req.query;
+    const { period = "current", startDate, endDate, year, month } = req.query;
 
     let dateFilter: any = {};
+    let currentPeriodFilter: any = {};
+    let previousPeriodFilter: any = {};
     const now = new Date();
 
-    // Definir período
-    switch (period) {
-      case "current":
-        dateFilter = {
-          year: now.getFullYear(),
-          month: now.getMonth() + 1,
-        };
-        break;
-      case "last3":
-        const last3Months = new Date(now.getFullYear(), now.getMonth() - 3, 1);
-        dateFilter = {
-          date: { $gte: last3Months },
-        };
-        break;
-      case "last6":
-        const last6Months = new Date(now.getFullYear(), now.getMonth() - 6, 1);
-        dateFilter = {
-          date: { $gte: last6Months },
-        };
-        break;
-      case "last12":
-        const last12Months = new Date(
-          now.getFullYear(),
-          now.getMonth() - 12,
-          1
-        );
-        dateFilter = {
-          date: { $gte: last12Months },
-        };
-        break;
-      case "custom":
-        if (startDate && endDate) {
-          dateFilter = {
-            date: {
-              $gte: new Date(startDate as string),
-              $lte: new Date(endDate as string),
-            },
+    // Se year e month foram fornecidos, usar período específico
+    if (year && month) {
+      const targetYear = Number(year);
+      const targetMonth = Number(month);
+
+      // Período atual (mês/ano selecionado)
+      currentPeriodFilter = {
+        year: targetYear,
+        month: targetMonth,
+      };
+
+      // Período anterior (mês anterior)
+      const prevDate = new Date(targetYear, targetMonth - 2, 1);
+      previousPeriodFilter = {
+        year: prevDate.getFullYear(),
+        month: prevDate.getMonth() + 1,
+      };
+
+      // Filtro para saldo atual (apenas transações até hoje do mês selecionado)
+      const endOfSelectedMonth = new Date(targetYear, targetMonth, 0);
+      const today = new Date();
+      const endDateForBalance =
+        targetYear === now.getFullYear() && targetMonth === now.getMonth() + 1
+          ? today
+          : endOfSelectedMonth;
+
+      dateFilter = {
+        year: targetYear,
+        month: targetMonth,
+        date: { $lte: endDateForBalance },
+      };
+    } else {
+      // Lógica original para períodos predefinidos
+      switch (period) {
+        case "current":
+          currentPeriodFilter = {
+            year: now.getFullYear(),
+            month: now.getMonth() + 1,
           };
-        }
-        break;
-      default:
-        // Por padrão, pegar apenas o mês atual
-        dateFilter = {
-          year: now.getFullYear(),
-          month: now.getMonth() + 1,
-        };
+          previousPeriodFilter = {
+            year:
+              now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear(),
+            month: now.getMonth() === 0 ? 12 : now.getMonth(),
+          };
+          dateFilter = {
+            year: now.getFullYear(),
+            month: now.getMonth() + 1,
+            date: { $lte: now },
+          };
+          break;
+        case "last3":
+          const last3Months = new Date(
+            now.getFullYear(),
+            now.getMonth() - 3,
+            1
+          );
+          dateFilter = {
+            date: { $gte: last3Months, $lte: now },
+          };
+          break;
+        case "last6":
+          const last6Months = new Date(
+            now.getFullYear(),
+            now.getMonth() - 6,
+            1
+          );
+          dateFilter = {
+            date: { $gte: last6Months, $lte: now },
+          };
+          break;
+        case "last12":
+          const last12Months = new Date(
+            now.getFullYear(),
+            now.getMonth() - 12,
+            1
+          );
+          dateFilter = {
+            date: { $gte: last12Months, $lte: now },
+          };
+          break;
+        case "custom":
+          if (startDate && endDate) {
+            dateFilter = {
+              date: {
+                $gte: new Date(startDate as string),
+                $lte: new Date(endDate as string),
+              },
+            };
+          }
+          break;
+        default:
+          currentPeriodFilter = {
+            year: now.getFullYear(),
+            month: now.getMonth() + 1,
+          };
+          previousPeriodFilter = {
+            year:
+              now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear(),
+            month: now.getMonth() === 0 ? 12 : now.getMonth(),
+          };
+          dateFilter = {
+            year: now.getFullYear(),
+            month: now.getMonth() + 1,
+            date: { $lte: now },
+          };
+      }
     }
 
-    // Buscar dados do resumo com filtro de data
-    const allTransactions = await Transaction.find(dateFilter).lean();
-    const summaryData = [
+    // Buscar dados do período atual
+    const currentTransactions = await Transaction.find(dateFilter).lean();
+    const currentSummaryData = [
       {
         _id: "INCOME",
-        total: allTransactions
+        total: currentTransactions
           .filter((t) => t.type === "INCOME")
           .reduce((sum, t) => sum + (t.amount || t.plannedAmount || 0), 0),
-        count: allTransactions.filter((t) => t.type === "INCOME").length,
+        count: currentTransactions.filter((t) => t.type === "INCOME").length,
       },
       {
         _id: "EXPENSE",
-        total: allTransactions
+        total: currentTransactions
           .filter((t) => t.type === "EXPENSE")
           .reduce((sum, t) => sum + (t.amount || t.plannedAmount || 0), 0),
-        count: allTransactions.filter((t) => t.type === "EXPENSE").length,
+        count: currentTransactions.filter((t) => t.type === "EXPENSE").length,
       },
     ];
+
+    // Buscar dados do período anterior para comparação (se não for período customizado)
+    let previousSummaryData = [
+      { _id: "INCOME", total: 0, count: 0 },
+      { _id: "EXPENSE", total: 0, count: 0 },
+    ];
+
+    if (Object.keys(previousPeriodFilter).length > 0) {
+      const previousTransactions = await Transaction.find(
+        previousPeriodFilter
+      ).lean();
+      previousSummaryData = [
+        {
+          _id: "INCOME",
+          total: previousTransactions
+            .filter((t) => t.type === "INCOME")
+            .reduce((sum, t) => sum + (t.amount || t.plannedAmount || 0), 0),
+          count: previousTransactions.filter((t) => t.type === "INCOME").length,
+        },
+        {
+          _id: "EXPENSE",
+          total: previousTransactions
+            .filter((t) => t.type === "EXPENSE")
+            .reduce((sum, t) => sum + (t.amount || t.plannedAmount || 0), 0),
+          count: previousTransactions.filter((t) => t.type === "EXPENSE")
+            .length,
+        },
+      ];
+    }
 
     const summary = {
       totalIncome: 0,
@@ -90,13 +181,35 @@ router.get("/dashboard", async (req, res) => {
       monthlyAverage: 0,
     };
 
-    summaryData.forEach((item) => {
+    // Calcular totais do período atual
+    currentSummaryData.forEach((item) => {
       if (item._id === "INCOME") {
         summary.totalIncome = item.total;
       } else if (item._id === "EXPENSE") {
         summary.totalExpenses = item.total;
       }
     });
+
+    // Calcular totais do período anterior
+    const previousIncome =
+      previousSummaryData.find((item) => item._id === "INCOME")?.total || 0;
+    const previousExpenses =
+      previousSummaryData.find((item) => item._id === "EXPENSE")?.total || 0;
+
+    // Calcular crescimento percentual
+    summary.incomeGrowth =
+      previousIncome > 0
+        ? ((summary.totalIncome - previousIncome) / previousIncome) * 100
+        : summary.totalIncome > 0
+        ? 100
+        : 0;
+
+    summary.expenseGrowth =
+      previousExpenses > 0
+        ? ((summary.totalExpenses - previousExpenses) / previousExpenses) * 100
+        : summary.totalExpenses > 0
+        ? 100
+        : 0;
 
     summary.netBalance = summary.totalIncome - summary.totalExpenses;
     summary.savingsRate =
@@ -106,8 +219,11 @@ router.get("/dashboard", async (req, res) => {
 
     // Dados mensais para gráfico (últimos 6 meses)
     const monthlyData = [];
+    const baseDate =
+      year && month ? new Date(Number(year), Number(month) - 1, 1) : now;
+
     for (let i = 5; i >= 0; i--) {
-      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const date = new Date(baseDate.getFullYear(), baseDate.getMonth() - i, 1);
       const monthFilter = {
         year: date.getFullYear(),
         month: date.getMonth() + 1,
@@ -128,14 +244,15 @@ router.get("/dashboard", async (req, res) => {
         )}`,
         income,
         expenses,
+        balance: income - expenses,
       });
     }
 
-    // Dados por categoria (mês atual)
-    const categoryData = [];
-    const categoryMap = new Map();
+    // Dados por categoria (período atual)
+    const categoryData: Array<{ category: string; amount: number }> = [];
+    const categoryMap = new Map<string, number>();
 
-    allTransactions.forEach((transaction) => {
+    currentTransactions.forEach((transaction) => {
       const category = transaction.category;
       const amount = transaction.amount || transaction.plannedAmount || 0;
 
