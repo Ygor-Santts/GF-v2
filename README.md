@@ -1,32 +1,98 @@
-# GF-v2 — Projeto completo com Docker (Vue 3 + Router + Pinia / Node + Express + Mongo)
+# 💰 FinanceFlow - Sistema de Gestão Financeira
 
-## Como rodar com Docker (recomendado em dev)
+Sistema moderno e completo para controle de finanças pessoais com interface intuitiva e funcionalidades avançadas.
 
-### 1) Backend + Mongo
+## 🚀 Início Rápido
+
+### Modo Recomendado (Frontend Local + Backend Docker):
 ```bash
-cd docker
-docker compose -f compose.backend.yml up --build -d
+./run-hybrid-improved.sh
 ```
 
-### 2) Frontend
+### Modo Docker Completo:
 ```bash
-cd docker
-docker compose -f compose.frontend.yml up --build -d
+docker compose up -d
 ```
 
-### Endpoints
-- Frontend: http://localhost:5173
-- Backend:  http://localhost:4000/health
-- Mongo (Compass): mongodb://localhost:27017/gestao_financeira
+### Modo Local Completo:
+```bash
+./run-local.sh
+```
 
-> Ajuste `.env` conforme necessário: `backend/.env` e `frontend/.env` (use os `.env.example` como base).
+## 📱 Funcionalidades
 
-## Stack
-- Front: Vue 3 + Vite + Vue Router + Pinia + Axios
-- Back: Node.js + Express + Mongoose + Zod + Cron opcional
-- DB: MongoDB 6
+- 📊 **Dashboard** com gráficos e métricas em tempo real
+- 💳 **Gestão de Transações** com filtros avançados
+- 🔄 **Transações Recorrentes** automatizadas
+- 🏦 **Controle de Financiamentos** com simulações
+- 📈 **Relatórios Detalhados** com insights inteligentes
+- 🎨 **Interface Moderna** responsiva e intuitiva
 
-## Recursos implementados
-- Recorrentes com `startDate`, `endDate`, `installments`, edição inline.
-- Geração automática ao salvar/editar (seed) + garantia mensal ao listar (idempotente).
-- Dashboard e Transações com seletor `<input type="month">`.
+## 🛠️ Tecnologias
+
+**Frontend:**
+- Vue.js 3 + TypeScript
+- Vite (desenvolvimento rápido)
+- Chart.js (gráficos)
+- CSS customizado responsivo
+
+**Backend:**
+- Node.js + Express + TypeScript
+- MongoDB (banco de dados)
+- Zod (validação)
+- Cron jobs (automação)
+
+**DevOps:**
+- Docker & Docker Compose
+- Scripts automatizados
+- Hot-reload em desenvolvimento
+
+## 📋 URLs de Acesso
+
+- **Frontend**: http://localhost:5173
+- **Backend**: http://localhost:4000
+- **Health Check**: http://localhost:4000/health
+
+## 📚 Documentação
+
+Para informações detalhadas sobre os diferentes modos de execução, consulte:
+- [MODOS-EXECUCAO.md](./MODOS-EXECUCAO.md) - Guia completo dos modos de execução
+
+## 🔧 Scripts Disponíveis
+
+| Script | Descrição |
+|--------|-----------|
+| `./run-hybrid-improved.sh` | **Modo híbrido** (recomendado para desenvolvimento) |
+| `./stop-hybrid.sh` | Para o modo híbrido |
+| `./run-local.sh` | Modo local completo |
+
+## 🎯 Estrutura do Projeto
+
+```
+├── backend/           # API Node.js + TypeScript
+│   ├── src/
+│   │   ├── models/    # Modelos MongoDB
+│   │   ├── routes/    # Rotas da API
+│   │   └── services/  # Lógica de negócio
+│   └── package.json
+├── frontend/          # Interface Vue.js
+│   ├── src/
+│   │   ├── pages/     # Páginas da aplicação
+│   │   ├── components/# Componentes reutilizáveis
+│   │   └── api/       # Cliente HTTP
+│   └── package.json
+├── docker-compose.yml # Docker completo
+├── docker-compose.backend.yml # Apenas backend + MongoDB
+└── MODOS-EXECUCAO.md  # Documentação detalhada
+```
+
+## 🤝 Desenvolvimento
+
+1. **Clone o repositório**
+2. **Execute o modo híbrido**: `./run-hybrid-improved.sh`
+3. **Acesse**: http://localhost:5173
+4. **Desenvolva** com hot-reload automático!
+
+---
+
+**Desenvolvido com ❤️ para facilitar sua gestão financeira**
