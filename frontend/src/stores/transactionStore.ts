@@ -60,16 +60,26 @@ export const useTransactionStore = defineStore("transaction", () => {
       const response: TransactionResponse =
         await transactionService.getTransactions(filters);
 
-      transactions.value = response.transactions;
+      // Se for a primeira página, substitui as transações
+      // Se for uma página posterior, adiciona às existentes
+      if (filters?.page === 1 || !filters?.page) {
+        transactions.value = response.transactions;
+      } else {
+        transactions.value.push(...response.transactions);
+      }
+
       pagination.value = {
         page: response.page,
         totalPages: response.totalPages,
         total: response.total,
         limit: filters?.limit || 10,
       };
+
+      return response;
     } catch (err: any) {
       error.value = err.message || "Erro ao carregar transações";
       console.error("Erro ao buscar transações:", err);
+      throw err;
     } finally {
       loading.value = false;
     }

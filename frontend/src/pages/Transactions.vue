@@ -152,7 +152,10 @@
         </div>
       </template>
 
-      <div class="overflow-x-auto">
+      <div
+        class="overflow-x-auto max-h-96 overflow-y-auto"
+        ref="scrollContainer"
+      >
         <table class="min-w-full divide-y divide-slate-200">
           <thead class="bg-slate-50">
             <tr>
@@ -201,7 +204,7 @@
           </thead>
           <tbody class="bg-white divide-y divide-slate-200">
             <tr
-              v-for="transaction in paginatedTransactions"
+              v-for="transaction in displayedTransactions"
               :key="transaction._id"
               class="hover:bg-slate-50 transition-colors duration-200"
             >
@@ -288,44 +291,50 @@
       </div>
 
       <template #footer>
-        <!-- Pagination -->
-        <div
-          class="flex items-center justify-between px-6 py-3 bg-gray-50 border-t border-gray-200"
-        >
-          <div class="flex items-center">
-            <p class="text-sm text-gray-700">
-              Mostrando {{ (currentPage - 1) * itemsPerPage + 1 }} a
-              {{
-                Math.min(
-                  currentPage * itemsPerPage,
-                  filteredTransactions.length
-                )
-              }}
-              de {{ filteredTransactions.length }} resultados
+        <!-- Load more button or indicators -->
+        <div class="px-6 py-4 bg-gray-50 border-t border-gray-200">
+          <!-- Transaction counter -->
+          <div class="flex items-center justify-between mb-3">
+            <p class="text-sm text-gray-600">
+              Página {{ currentPage }} de {{ totalPages }} -
+              {{ totalTransactions }} transações no total
             </p>
           </div>
-          <div class="flex items-center space-x-2">
-            <button
-              @click="currentPage--"
-              :disabled="currentPage === 1"
-              class="btn-secondary text-sm"
-              :class="{ 'opacity-50 cursor-not-allowed': currentPage === 1 }"
+
+          <!-- Loading indicator -->
+          <div
+            v-if="loadingMore || loading"
+            class="flex items-center justify-center space-x-2"
+          >
+            <div
+              class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"
+            ></div>
+            <span class="text-sm text-gray-600">{{
+              loading
+                ? "Carregando transações..."
+                : "Carregando mais transações..."
+            }}</span>
+          </div>
+
+          <!-- Load more button -->
+          <div v-else-if="hasMoreTransactions" class="flex justify-center">
+            <Button
+              @click="loadMoreTransactions"
+              variant="secondary"
+              size="sm"
+              :icon="Plus"
+              class="text-gray-700 hover:text-gray-900"
             >
-              Anterior
-            </button>
-            <span class="text-sm text-gray-700"
-              >{{ currentPage }} de {{ totalPages }}</span
+              Carregar Mais Transações
+            </Button>
+          </div>
+
+          <!-- End of results indicator -->
+          <div v-else class="flex items-center justify-center space-x-2">
+            <CheckCircle class="w-4 h-4 text-green-500" />
+            <span class="text-sm text-gray-500"
+              >Todas as transações foram carregadas</span
             >
-            <button
-              @click="currentPage++"
-              :disabled="currentPage === totalPages"
-              class="btn-secondary text-sm"
-              :class="{
-                'opacity-50 cursor-not-allowed': currentPage === totalPages,
-              }"
-            >
-              Próximo
-            </button>
           </div>
         </div>
       </template>
@@ -343,7 +352,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onMounted, ref, watch, nextTick } from "vue";
 import { useTransactionStore } from "../stores/transactionStore";
 import TransactionModal from "../components/TransactionModal.vue";
 import {
@@ -376,6 +385,7 @@ import {
 
 // Import types from service
 import type { Transaction } from "../services/transactionService";
+import MetricCard from "../components/ui/MetricCard.vue";
 
 // Store
 const transactionStore = useTransactionStore();
@@ -393,8 +403,13 @@ const selectedPeriod = ref({
 const showAddModal = ref(false);
 const showEditModal = ref(false);
 const editingTransaction = ref<Transaction | null | undefined>(null);
+// Pagination variables
 const currentPage = ref(1);
 const itemsPerPage = 10;
+const totalPages = ref(0);
+const totalTransactions = ref(0);
+const loadingMore = ref(false);
+const loading = ref(false);
 const sortField = ref("date");
 const sortDirection = ref<"asc" | "desc">("desc");
 
@@ -480,14 +495,25 @@ const filteredTransactions = computed(() => {
   return filtered;
 });
 
-const paginatedTransactions = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage;
-  const end = start + itemsPerPage;
-  return filteredTransactions.value.slice(start, end);
+// Pagination computed properties
+const hasMoreTransactions = computed(() => {
+  return currentPage.value < totalPages.value;
 });
 
-const totalPages = computed(() => {
-  return Math.ceil(filteredTransactions.value.length / itemsPerPage);
+const displayedTransactions = computed(() => {
+  let filtered = transactionStore.transactions;
+
+  // Apply search filter locally
+  if (filters.value.search) {
+    const searchTerm = filters.value.search.toLowerCase();
+    filtered = filtered.filter(
+      (transaction) =>
+        transaction.description?.toLowerCase().includes(searchTerm) ||
+        transaction.category.toLowerCase().includes(searchTerm)
+    );
+  }
+
+  return filtered;
 });
 
 const totalIncome = computed(() => transactionStore.totalIncome);
@@ -522,8 +548,9 @@ const handlePeriodChange = async (period: { month: number; year: number }) => {
 };
 
 // Data loading
-const loadTransactions = async () => {
+const loadTransactions = async (page: number = 1) => {
   try {
+    loading.value = true;
     const startDate = new Date(getYear(), getMonth() - 1, 1)
       .toISOString()
       .split("T")[0];
@@ -531,10 +558,24 @@ const loadTransactions = async () => {
       .toISOString()
       .split("T")[0];
 
-    await transactionStore.fetchTransactions({
+    // Prepare filters for API
+    const apiFilters: any = {
       startDate,
       endDate,
-    });
+      page,
+      limit: itemsPerPage,
+    };
+
+    // Add filters if they have values
+    if (filters.value.type) apiFilters.type = filters.value.type;
+    if (filters.value.status) apiFilters.status = filters.value.status;
+    if (filters.value.category) apiFilters.category = filters.value.category;
+
+    const response = await transactionStore.fetchTransactions(apiFilters);
+
+    // Update pagination info
+    totalPages.value = transactionStore.pagination.totalPages;
+    totalTransactions.value = transactionStore.pagination.total;
 
     // Extract unique categories
     const uniqueCategories = [
@@ -543,6 +584,8 @@ const loadTransactions = async () => {
     categories.value = uniqueCategories.sort();
   } catch (error) {
     console.error("Error loading transactions:", error);
+  } finally {
+    loading.value = false;
   }
 };
 
@@ -558,6 +601,7 @@ const sortBy = (field: string) => {
 
 const applyFilters = () => {
   currentPage.value = 1;
+  loadTransactions(1);
 };
 
 const clearFilters = () => {
@@ -568,6 +612,7 @@ const clearFilters = () => {
     search: "",
   };
   currentPage.value = 1;
+  loadTransactions(1);
 };
 
 const editTransaction = (transaction: Transaction) => {
@@ -604,6 +649,29 @@ const closeModal = () => {
   editingTransaction.value = null;
 };
 
+// Pagination functions
+const loadMoreTransactions = async () => {
+  if (loadingMore.value || !hasMoreTransactions.value) return;
+
+  loadingMore.value = true;
+  currentPage.value++;
+
+  try {
+    await loadTransactions(currentPage.value);
+  } catch (error) {
+    console.error("Error loading more transactions:", error);
+    currentPage.value--; // Revert page on error
+  } finally {
+    loadingMore.value = false;
+  }
+};
+
+const resetPagination = () => {
+  currentPage.value = 1;
+  totalPages.value = 0;
+  totalTransactions.value = 0;
+};
+
 const handleSave = async () => {
   await loadTransactions();
   closeModal();
@@ -615,11 +683,13 @@ const exportTransactions = () => {
 };
 
 // Watchers
-watch(filteredTransactions, () => {
-  if (currentPage.value > totalPages.value) {
-    currentPage.value = Math.max(1, totalPages.value);
+watch(
+  () => selectedPeriod.value,
+  () => {
+    resetPagination();
+    loadTransactions(1);
   }
-});
+);
 
 // Lifecycle
 onMounted(() => {

@@ -134,9 +134,12 @@
             </div>
           </div>
         </template>
-        <div class="h-80">
-          <canvas ref="monthlyChart"></canvas>
-        </div>
+        <ChartComponent
+          type="line"
+          :data="monthlyChartData"
+          :options="monthlyChartOptions"
+          chart-id="monthlyChart"
+        />
       </Card>
 
       <!-- Category Distribution -->
@@ -149,19 +152,22 @@
             <div class="flex items-center space-x-2">
               <PieChart class="w-5 h-5 text-slate-400" />
               <select
-                v-model="categoryPeriod"
-                @change="refreshData"
+                v-model="categoryType"
+                @change="updateCategoryChart"
                 class="text-sm border-0 bg-slate-50 rounded-lg px-3 py-1"
               >
-                <option value="current">Mês Atual</option>
-                <option value="last3">Últimos 3 Meses</option>
+                <option value="EXPENSE">Gastos</option>
+                <option value="INCOME">Receitas</option>
               </select>
             </div>
           </div>
         </template>
-        <div class="h-80">
-          <canvas ref="categoryChart"></canvas>
-        </div>
+        <ChartComponent
+          type="doughnut"
+          :data="categoryChartData"
+          :options="categoryChartOptions"
+          chart-id="categoryChart"
+        />
       </Card>
     </div>
 
@@ -299,8 +305,8 @@
 
 <script setup lang="ts">
 import { ref, onMounted, nextTick, computed } from "vue";
-import { Chart, registerables } from "chart.js";
 import { useDashboardStore } from "../stores/dashboardStore";
+import ChartComponent from "../components/ChartComponent.vue";
 import {
   Button,
   Card,
@@ -333,8 +339,6 @@ import {
   Eye,
 } from "lucide-vue-next";
 
-Chart.register(...registerables);
-
 // Store
 const dashboardStore = useDashboardStore();
 
@@ -347,14 +351,6 @@ const selectedPeriod = ref({
   month: new Date().getMonth() + 1,
   year: new Date().getFullYear(),
 });
-
-// Chart refs
-const monthlyChartCanvas = ref<HTMLCanvasElement>();
-const categoryChartCanvas = ref<HTMLCanvasElement>();
-
-// Chart instances
-let monthlyChartInstance: Chart | null = null;
-let categoryChartInstance: Chart | null = null;
 
 // Local state
 const categoryType = ref<"INCOME" | "EXPENSE">("EXPENSE");
@@ -393,6 +389,89 @@ const currentDate = computed(() => {
   });
 });
 
+// Chart data computed properties
+const monthlyChartData = computed(() => {
+  const monthlyData = dashboardStore.monthlyData;
+  return {
+    labels: monthlyData.map((item: any) => formatMonth(item.month)),
+    datasets: [
+      {
+        label: "Receitas",
+        data: monthlyData.map((item: any) => item.income),
+        borderColor: "#10b981",
+        backgroundColor: "rgba(16, 185, 129, 0.1)",
+        tension: 0.4,
+        fill: true,
+      },
+      {
+        label: "Despesas",
+        data: monthlyData.map((item: any) => item.expenses),
+        borderColor: "#ef4444",
+        backgroundColor: "rgba(239, 68, 68, 0.1)",
+        tension: 0.4,
+        fill: true,
+      },
+    ],
+  };
+});
+
+const monthlyChartOptions = computed(() => ({
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: {
+      position: "top",
+    },
+  },
+  scales: {
+    y: {
+      beginAtZero: true,
+      ticks: {
+        callback: function (value: any) {
+          return dashboardStore.formatCurrency(Number(value));
+        },
+      },
+    },
+  },
+}));
+
+const categoryChartData = computed(() => {
+  const categoryData = dashboardStore.categoryData.filter(
+    (cat: any) => cat.type === categoryType.value
+  );
+
+  return {
+    labels: categoryData.map((item: any) => item.category),
+    datasets: [
+      {
+        data: categoryData.map((item: any) => item.amount),
+        backgroundColor: [
+          "#3b82f6",
+          "#ef4444",
+          "#10b981",
+          "#f59e0b",
+          "#8b5cf6",
+          "#06b6d4",
+          "#84cc16",
+          "#f97316",
+        ],
+        borderWidth: 2,
+        borderColor: "#ffffff",
+      },
+    ],
+  };
+});
+
+const categoryChartOptions = computed(() => ({
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: {
+      position: "bottom",
+    },
+  },
+}));
+
 // Period change handler
 const handlePeriodChange = async (period: { month: number; year: number }) => {
   console.log("Period changed:", period);
@@ -414,120 +493,11 @@ const formatMonth = (month: string) => {
 
 const refreshData = async () => {
   await dashboardStore.fetchDashboardData();
-  await nextTick();
-  createCharts();
 };
 
-const renderCategoryChart = () => {
-  createCategoryChart();
-};
-
-const createCharts = () => {
-  createMonthlyChart();
-  createCategoryChart();
-};
-
-const createMonthlyChart = () => {
-  if (!monthlyChartCanvas.value || dashboardStore.monthlyData.length === 0)
-    return;
-
-  if (monthlyChartInstance) {
-    monthlyChartInstance.destroy();
-  }
-
-  const ctx = monthlyChartCanvas.value.getContext("2d");
-  if (!ctx) return;
-
-  const monthlyData = dashboardStore.monthlyData;
-
-  monthlyChartInstance = new Chart(ctx, {
-    type: "line",
-    data: {
-      labels: monthlyData.map((item: any) => formatMonth(item.month)),
-      datasets: [
-        {
-          label: "Receitas",
-          data: monthlyData.map((item: any) => item.income),
-          borderColor: "#10b981",
-          backgroundColor: "rgba(16, 185, 129, 0.1)",
-          tension: 0.4,
-          fill: true,
-        },
-        {
-          label: "Despesas",
-          data: monthlyData.map((item: any) => item.expenses),
-          borderColor: "#ef4444",
-          backgroundColor: "rgba(239, 68, 68, 0.1)",
-          tension: 0.4,
-          fill: true,
-        },
-      ],
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          position: "top",
-        },
-      },
-      scales: {
-        y: {
-          beginAtZero: true,
-          ticks: {
-            callback: function (value) {
-              return dashboardStore.formatCurrency(value as number);
-            },
-          },
-        },
-      },
-    },
-  });
-};
-
-const createCategoryChart = () => {
-  if (!categoryChartCanvas.value || dashboardStore.categoryData.length === 0)
-    return;
-
-  if (categoryChartInstance) {
-    categoryChartInstance.destroy();
-  }
-
-  const ctx = categoryChartCanvas.value.getContext("2d");
-  if (!ctx) return;
-
-  const categoryData = dashboardStore.categoryData;
-
-  categoryChartInstance = new Chart(ctx, {
-    type: "doughnut",
-    data: {
-      labels: categoryData.map((item: any) => item.category),
-      datasets: [
-        {
-          data: categoryData.map((item: any) => item.amount),
-          backgroundColor: [
-            "#3b82f6",
-            "#ef4444",
-            "#10b981",
-            "#f59e0b",
-            "#8b5cf6",
-            "#06b6d4",
-            "#84cc16",
-            "#f97316",
-          ],
-        },
-      ],
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          position: "bottom",
-        },
-      },
-    },
-  });
+const updateCategoryChart = () => {
+  // O gráfico será atualizado automaticamente via computed properties
+  console.log("Category chart updated for type:", categoryType.value);
 };
 
 onMounted(() => {
