@@ -21,7 +21,9 @@
     </div>
 
     <!-- Stats Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div
+      class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6"
+    >
       <!-- Receitas -->
       <div
         class="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-slate-100"
@@ -39,7 +41,9 @@
         </div>
         <div class="flex items-center text-sm">
           <ArrowUpRight class="w-4 h-4 text-emerald-500 mr-1" />
-          <span class="text-emerald-600 font-medium">+12%</span>
+          <span class="text-emerald-600 font-medium"
+            >+{{ stats.incomeGrowth }}%</span
+          >
           <span class="text-slate-500 ml-1">vs mês anterior</span>
         </div>
       </div>
@@ -61,7 +65,9 @@
         </div>
         <div class="flex items-center text-sm">
           <ArrowDownRight class="w-4 h-4 text-red-500 mr-1" />
-          <span class="text-red-600 font-medium">-8%</span>
+          <span class="text-red-600 font-medium"
+            >{{ stats.expenseGrowth }}%</span
+          >
           <span class="text-slate-500 ml-1">vs mês anterior</span>
         </div>
       </div>
@@ -77,7 +83,7 @@
           <div class="text-right">
             <p class="text-sm text-slate-500">Saldo</p>
             <p class="text-2xl font-bold text-slate-800">
-              R$ {{ formatCurrency(stats.balance) }}
+              R$ {{ formatCurrency(stats.netBalance) }}
             </p>
           </div>
         </div>
@@ -98,12 +104,52 @@
           <div class="text-right">
             <p class="text-sm text-slate-500">Transações</p>
             <p class="text-2xl font-bold text-slate-800">
-              {{ stats.totalTransactions }}
+              {{ totalTransactions }}
             </p>
           </div>
         </div>
         <div class="flex items-center text-sm">
           <span class="text-slate-500">Este mês</span>
+        </div>
+      </div>
+
+      <!-- Receitas Pagas -->
+      <div
+        class="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-slate-100"
+      >
+        <div class="flex items-center justify-between mb-4">
+          <div class="p-3 bg-emerald-100 rounded-xl">
+            <CheckCircle class="w-6 h-6 text-emerald-600" />
+          </div>
+          <div class="text-right">
+            <p class="text-sm text-slate-500">Receitas Pagas</p>
+            <p class="text-2xl font-bold text-slate-800">
+              {{ incomeTransactions }}
+            </p>
+          </div>
+        </div>
+        <div class="flex items-center text-sm">
+          <span class="text-slate-500">Entradas confirmadas</span>
+        </div>
+      </div>
+
+      <!-- Despesas Pagas -->
+      <div
+        class="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-slate-100"
+      >
+        <div class="flex items-center justify-between mb-4">
+          <div class="p-3 bg-amber-100 rounded-xl">
+            <Clock class="w-6 h-6 text-amber-600" />
+          </div>
+          <div class="text-right">
+            <p class="text-sm text-slate-500">Pendentes</p>
+            <p class="text-2xl font-bold text-slate-800">
+              {{ plannedTransactions }}
+            </p>
+          </div>
+        </div>
+        <div class="flex items-center text-sm">
+          <span class="text-slate-500">Aguardando pagamento</span>
         </div>
       </div>
     </div>
@@ -118,7 +164,7 @@
             <BarChart3 class="w-5 h-5 text-slate-400" />
             <select
               v-model="selectedMonth"
-              @change="loadMonthlyData"
+              @change="refreshData"
               class="text-sm border-0 bg-slate-50 rounded-lg px-3 py-1"
             >
               <option value="">Todos os meses</option>
@@ -147,7 +193,7 @@
             <PieChart class="w-5 h-5 text-slate-400" />
             <select
               v-model="categoryPeriod"
-              @change="loadCategoryData"
+              @change="refreshData"
               class="text-sm border-0 bg-slate-50 rounded-lg px-3 py-1"
             >
               <option value="current">Mês Atual</option>
@@ -170,7 +216,7 @@
           </h3>
           <div class="flex items-center space-x-3">
             <button
-              @click="loadData"
+              @click="refreshData"
               class="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-50 transition-colors"
             >
               <RotateCcw class="w-5 h-5" />
@@ -303,39 +349,74 @@
 <script setup lang="ts">
 import { ref, onMounted, nextTick, computed } from "vue";
 import { Chart, registerables } from "chart.js";
-import api from "../api/http";
+import { useDashboardStore } from "../stores/dashboardStore";
 import {
+  BarChart2,
+  RefreshCw,
+  Wallet,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpCircle,
+  ArrowDownCircle,
   TrendingUp,
   TrendingDown,
+  Hourglass,
+  Clock,
+  Plus,
   Banknote,
   PieChart,
   RotateCcw,
-  Calendar,
-  CreditCard,
   BarChart3,
-  Plus,
-  Eye,
   ArrowUpRight,
   ArrowDownRight,
+  CreditCard,
+  CheckCircle,
+  Eye,
 } from "lucide-vue-next";
 
 Chart.register(...registerables);
 
-// Reactive data
-const loading = ref(true);
-const data = ref<any>(null);
-const recentTransactions = ref<any[]>([]);
-const stats = ref<any>({});
+// Store
+const dashboardStore = useDashboardStore();
+
+// Local reactive data
 const selectedMonth = ref("");
 const categoryPeriod = ref("current");
 
 // Chart refs
-const monthlyChart = ref<HTMLCanvasElement>();
-const categoryChart = ref<HTMLCanvasElement>();
+const monthlyChartCanvas = ref<HTMLCanvasElement>();
+const categoryChartCanvas = ref<HTMLCanvasElement>();
 
 // Chart instances
 let monthlyChartInstance: Chart | null = null;
 let categoryChartInstance: Chart | null = null;
+
+// Local state
+const categoryType = ref<"INCOME" | "EXPENSE">("EXPENSE");
+
+// Computed from store
+const loading = computed(() => dashboardStore.loading);
+const stats = computed(() => ({
+  totalIncome: dashboardStore.summary.totalIncome,
+  totalExpenses: dashboardStore.summary.totalExpenses,
+  netBalance: dashboardStore.summary.netBalance,
+  incomeGrowth: 0,
+  expenseGrowth: 0,
+  pendingTransactions: dashboardStore.recentTransactions.filter(
+    (t) => t.status === "PLANNED"
+  ).length,
+}));
+const recentTransactions = computed(() => dashboardStore.recentTransactions);
+const availableMonths = computed(() =>
+  dashboardStore.monthlyData.map((item) => item.month)
+);
+
+// Métricas de contagem
+const totalTransactions = computed(() => dashboardStore.totalTransactions);
+const incomeTransactions = computed(() => dashboardStore.incomeTransactions);
+const expenseTransactions = computed(() => dashboardStore.expenseTransactions);
+const paidTransactions = computed(() => dashboardStore.paidTransactions);
+const plannedTransactions = computed(() => dashboardStore.plannedTransactions);
 
 // Computed
 const currentDate = computed(() => {
@@ -347,14 +428,9 @@ const currentDate = computed(() => {
   });
 });
 
-const availableMonths = computed(() => {
-  if (!data.value?.monthlyData) return [];
-  return data.value.monthlyData.map((item: any) => item.month);
-});
-
 // Methods
 const formatCurrency = (value: number) => {
-  return new Intl.NumberFormat("pt-BR").format(value || 0);
+  return dashboardStore.formatCurrency(value || 0);
 };
 
 const formatDate = (dateString: string) => {
@@ -362,43 +438,17 @@ const formatDate = (dateString: string) => {
 };
 
 const formatMonth = (month: string) => {
-  const [year, monthNum] = month.split("-");
-  const date = new Date(parseInt(year), parseInt(monthNum) - 1);
-  return date.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+  return dashboardStore.getMonthName(month);
 };
 
-const loadData = async () => {
-  try {
-    loading.value = true;
-    const response = await api.get("/api/reports/dashboard");
-    data.value = response.data;
-
-    stats.value = {
-      totalIncome: data.value.summary?.totalIncome || 0,
-      totalExpenses: data.value.summary?.totalExpenses || 0,
-      balance:
-        (data.value.summary?.totalIncome || 0) -
-        (data.value.summary?.totalExpenses || 0),
-      totalTransactions: data.value.recentTransactions?.length || 0,
-    };
-
-    recentTransactions.value = data.value.recentTransactions || [];
-
-    await nextTick();
-    createCharts();
-  } catch (error) {
-    console.error("Erro ao carregar dados:", error);
-  } finally {
-    loading.value = false;
-  }
+const refreshData = async () => {
+  await dashboardStore.fetchDashboardData();
+  await nextTick();
+  createCharts();
 };
 
-const loadMonthlyData = async () => {
-  await loadData();
-};
-
-const loadCategoryData = async () => {
-  await loadData();
+const renderCategoryChart = () => {
+  createCategoryChart();
 };
 
 const createCharts = () => {
@@ -407,16 +457,17 @@ const createCharts = () => {
 };
 
 const createMonthlyChart = () => {
-  if (!monthlyChart.value || !data.value?.monthlyData) return;
+  if (!monthlyChartCanvas.value || dashboardStore.monthlyData.length === 0)
+    return;
 
   if (monthlyChartInstance) {
     monthlyChartInstance.destroy();
   }
 
-  const ctx = monthlyChart.value.getContext("2d");
+  const ctx = monthlyChartCanvas.value.getContext("2d");
   if (!ctx) return;
 
-  const monthlyData = data.value.monthlyData || [];
+  const monthlyData = dashboardStore.monthlyData;
 
   monthlyChartInstance = new Chart(ctx, {
     type: "line",
@@ -454,9 +505,7 @@ const createMonthlyChart = () => {
           beginAtZero: true,
           ticks: {
             callback: function (value) {
-              return (
-                "R$ " + new Intl.NumberFormat("pt-BR").format(value as number)
-              );
+              return dashboardStore.formatCurrency(value as number);
             },
           },
         },
@@ -466,16 +515,17 @@ const createMonthlyChart = () => {
 };
 
 const createCategoryChart = () => {
-  if (!categoryChart.value || !data.value?.categoryData) return;
+  if (!categoryChartCanvas.value || dashboardStore.categoryData.length === 0)
+    return;
 
   if (categoryChartInstance) {
     categoryChartInstance.destroy();
   }
 
-  const ctx = categoryChart.value.getContext("2d");
+  const ctx = categoryChartCanvas.value.getContext("2d");
   if (!ctx) return;
 
-  const categoryData = data.value.categoryData || [];
+  const categoryData = dashboardStore.categoryData;
 
   categoryChartInstance = new Chart(ctx, {
     type: "doughnut",
@@ -510,6 +560,6 @@ const createCategoryChart = () => {
 };
 
 onMounted(() => {
-  loadData();
+  refreshData();
 });
 </script>

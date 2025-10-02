@@ -226,7 +226,8 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue";
-import api from "../api/http";
+import { useRecurringStore } from "../stores/recurringStore";
+import RecurringModal from "../components/RecurringModal.vue";
 
 // Types
 interface RecurringTransaction {
@@ -241,8 +242,10 @@ interface RecurringTransaction {
   endDate?: string;
 }
 
+// Store
+const recurringStore = useRecurringStore();
+
 // Reactive data
-const recurringTransactions = ref<RecurringTransaction[]>([]);
 const showAddModal = ref(false);
 const showEditModal = ref(false);
 const editingRecurring = ref<RecurringTransaction | null>(null);
@@ -250,37 +253,27 @@ const filterType = ref("");
 
 // Computed properties
 const filteredRecurring = computed(() => {
-  if (!filterType.value) return recurringTransactions.value;
-  return recurringTransactions.value.filter((r) => r.type === filterType.value);
+  if (!filterType.value) return recurringStore.recurringTransactions;
+  return recurringStore.recurringTransactions.filter(
+    (r) => r.type === filterType.value
+  );
 });
 
-const totalRecurringIncome = computed(() => {
-  return recurringTransactions.value
-    .filter((r) => r.type === "INCOME" && r.isActive)
-    .reduce((sum, r) => sum + r.amount, 0);
-});
+const totalRecurringIncome = computed(() => recurringStore.totalMonthlyIncome);
 
-const totalRecurringExpenses = computed(() => {
-  return recurringTransactions.value
-    .filter((r) => r.type === "EXPENSE" && r.isActive)
-    .reduce((sum, r) => sum + r.amount, 0);
-});
-
-const monthlyBalance = computed(
-  () => totalRecurringIncome.value + totalRecurringExpenses.value
+const totalRecurringExpenses = computed(
+  () => recurringStore.totalMonthlyExpenses
 );
 
-const recurringIncomeCount = computed(() => {
-  return recurringTransactions.value.filter(
-    (r) => r.type === "INCOME" && r.isActive
-  ).length;
-});
+const monthlyBalance = computed(() => recurringStore.monthlyBalance);
 
-const recurringExpensesCount = computed(() => {
-  return recurringTransactions.value.filter(
-    (r) => r.type === "EXPENSE" && r.isActive
-  ).length;
-});
+const recurringIncomeCount = computed(
+  () => recurringStore.incomeRecurring.length
+);
+
+const recurringExpensesCount = computed(
+  () => recurringStore.expenseRecurring.length
+);
 
 // Utility functions
 const formatCurrency = (value: number) => {
@@ -314,8 +307,7 @@ const getNextOccurrence = (recurring: RecurringTransaction) => {
 // Data loading
 const loadRecurringTransactions = async () => {
   try {
-    const response = await api.get("/api/recurring");
-    recurringTransactions.value = response.data;
+    await recurringStore.fetchRecurringTransactions();
   } catch (error) {
     console.error("Error loading recurring transactions:", error);
   }
@@ -332,8 +324,7 @@ const deleteRecurring = async (recurring: RecurringTransaction) => {
     return;
 
   try {
-    await api.delete(`/api/recurring/${recurring._id}`);
-    await loadRecurringTransactions();
+    await recurringStore.deleteRecurring(recurring._id!);
   } catch (error) {
     console.error("Error deleting recurring transaction:", error);
   }
@@ -341,11 +332,7 @@ const deleteRecurring = async (recurring: RecurringTransaction) => {
 
 const toggleRecurring = async (recurring: RecurringTransaction) => {
   try {
-    await api.put(`/api/recurring/${recurring._id}`, {
-      ...recurring,
-      isActive: !recurring.isActive,
-    });
-    await loadRecurringTransactions();
+    await recurringStore.toggleActive(recurring._id!, !recurring.isActive);
   } catch (error) {
     console.error("Error toggling recurring transaction:", error);
   }
@@ -355,8 +342,10 @@ const generateNextMonth = async () => {
   if (!confirm("Gerar transações recorrentes para o próximo mês?")) return;
 
   try {
-    await api.post("/api/recurring/generate");
-    alert("Transações recorrentes geradas com sucesso!");
+    const result = await recurringStore.processRecurring();
+    alert(
+      `Transações recorrentes processadas! ${result.created} novas transações criadas.`
+    );
   } catch (error) {
     console.error("Error generating recurring transactions:", error);
     alert("Erro ao gerar transações recorrentes");

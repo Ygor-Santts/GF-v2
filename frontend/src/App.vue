@@ -80,8 +80,20 @@
           <span class="text-sm font-medium text-slate-600">Saldo Atual</span>
           <TrendingUp class="w-4 h-4 text-emerald-500" />
         </div>
-        <p class="text-2xl font-bold text-slate-800">R$ 12.450</p>
-        <p class="text-xs text-emerald-600 mt-1">+12% este mês</p>
+        <p class="text-2xl font-bold text-slate-800">
+          {{
+            stats?.netBalance !== undefined
+              ? formatCurrency(stats.netBalance)
+              : "-"
+          }}
+        </p>
+        <p class="text-xs text-emerald-600 mt-1">
+          {{
+            stats?.netBalance !== undefined
+              ? formatCurrency(stats.netBalance)
+              : "-"
+          }}
+        </p>
       </div>
 
       <!-- User Profile -->
@@ -181,6 +193,7 @@ import {
   Bell,
   Search,
 } from "lucide-vue-next";
+import { useDashboardStore } from "./stores/dashboardStore";
 
 const route = useRoute();
 const sidebarOpen = ref(false);
@@ -198,4 +211,11 @@ const currentPageTitle = computed(() => {
   const currentNav = navigation.find((nav) => nav.href === route.path);
   return currentNav?.name || "Dashboard";
 });
+
+const dashboardStore = useDashboardStore();
+
+const stats = computed(() => dashboardStore.summary);
+const formatCurrency = (value: number) => {
+  return dashboardStore.formatCurrency(value);
+};
 </script>

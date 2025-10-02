@@ -109,14 +109,13 @@
             <span
               class="badge"
               :class="
-                financing.status === 'ACTIVE'
+                financing.isActive &&
+                financing.paidInstallments < financing.totalInstallments
                   ? 'badge-success'
-                  : financing.status === 'COMPLETED'
-                  ? 'badge-info'
-                  : 'badge-warning'
+                  : 'badge-info'
               "
             >
-              {{ getStatusLabel(financing.status) }}
+              {{ getStatusLabel(financing) }}
             </span>
             <div class="flex items-center space-x-1">
               <button
@@ -219,7 +218,10 @@
             Ver Detalhes
           </button>
           <button
-            v-if="financing.status === 'ACTIVE'"
+            v-if="
+              financing.isActive &&
+              financing.paidInstallments < financing.totalInstallments
+            "
             @click="payInstallment(financing)"
             class="btn-success text-sm"
           >
@@ -266,25 +268,30 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue";
-import api from "../api/http";
+import { useFinancingStore } from "../stores/financingStore";
+import FinancingModal from "../components/FinancingModal.vue";
+import FinancingDetailsModal from "../components/FinancingDetailsModal.vue";
+import {
+  FileText as DocumentTextIcon,
+  Plus as PlusIcon,
+  Edit as PencilIcon,
+  Eye as EyeIcon,
+  Trash2 as TrashIcon,
+  DollarSign as BanknotesIcon,
+  Calendar as CalendarIcon,
+  TrendingUp,
+  AlertCircle,
+  CheckCircle as CheckCircleIcon,
+  CreditCard as CreditCardIcon,
+} from "lucide-vue-next";
 
-// Types
-interface Financing {
-  _id?: string;
-  description: string;
-  type: string;
-  originalAmount: number;
-  outstandingBalance: number;
-  installmentAmount: number;
-  totalInstallments: number;
-  paidInstallments: number;
-  interestRate: number;
-  startDate: string;
-  status: "ACTIVE" | "COMPLETED" | "SUSPENDED";
-}
+// Import types from service
+import type { Financing } from "../services/financingService";
+
+// Store
+const financingStore = useFinancingStore();
 
 // Reactive data
-const financings = ref<Financing[]>([]);
 const showAddModal = ref(false);
 const showEditModal = ref(false);
 const showDetailsModal = ref(false);
@@ -292,23 +299,15 @@ const editingFinancing = ref<Financing | null>(null);
 const selectedFinancing = ref<Financing | null>(null);
 
 // Computed properties
-const totalOutstandingBalance = computed(() => {
-  return financings.value
-    .filter((f) => f.status === "ACTIVE")
-    .reduce((sum, f) => sum + f.outstandingBalance, 0);
-});
+const financings = computed(() => financingStore.financings);
 
-const totalMonthlyPayment = computed(() => {
-  return financings.value
-    .filter((f) => f.status === "ACTIVE")
-    .reduce((sum, f) => sum + f.installmentAmount, 0);
-});
+const totalOutstandingBalance = computed(
+  () => financingStore.totalOutstandingBalance
+);
 
-const totalPaidAmount = computed(() => {
-  return financings.value.reduce((sum, f) => {
-    return sum + f.paidInstallments * f.installmentAmount;
-  }, 0);
-});
+const totalMonthlyPayment = computed(() => financingStore.totalMonthlyPayments);
+
+const totalPaidAmount = computed(() => financingStore.totalPaidAmount);
 
 // Utility functions
 const formatCurrency = (value: number) => {
@@ -322,13 +321,14 @@ const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString("pt-BR");
 };
 
-const getStatusLabel = (status: string) => {
-  const labels = {
-    ACTIVE: "Ativo",
-    COMPLETED: "Quitado",
-    SUSPENDED: "Suspenso",
-  };
-  return labels[status as keyof typeof labels] || status;
+const getStatusLabel = (financing: Financing) => {
+  if (!financing.isActive) {
+    return "Quitado";
+  }
+  if (financing.paidInstallments >= financing.totalInstallments) {
+    return "Quitado";
+  }
+  return "Ativo";
 };
 
 const getProgressPercentage = (financing: Financing) => {
@@ -349,8 +349,7 @@ const getNextDueDate = (financing: Financing) => {
 // Data loading
 const loadFinancings = async () => {
   try {
-    const response = await api.get("/api/financing");
-    financings.value = response.data;
+    await financingStore.fetchFinancings();
   } catch (error) {
     console.error("Error loading financings:", error);
   }
@@ -366,8 +365,7 @@ const deleteFinancing = async (financing: Financing) => {
   if (!confirm("Tem certeza que deseja excluir este financiamento?")) return;
 
   try {
-    await api.delete(`/api/financing/${financing._id}`);
-    await loadFinancings();
+    await financingStore.deleteFinancing(financing._id!);
   } catch (error) {
     console.error("Error deleting financing:", error);
   }
@@ -389,8 +387,11 @@ const payInstallment = async (financing: Financing) => {
     return;
 
   try {
-    await api.post(`/api/financing/${financing._id}/pay`);
-    await loadFinancings();
+    await financingStore.payInstallment(
+      financing._id!,
+      financing.paidInstallments + 1,
+      financing.installmentAmount
+    );
     alert("Parcela paga com sucesso!");
   } catch (error) {
     console.error("Error paying installment:", error);

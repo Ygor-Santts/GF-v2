@@ -1,103 +1,110 @@
 <template>
-  <div class="space-y-6 animate-fade-in">
-    <!-- Header -->
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        <h1 class="text-3xl font-bold text-gray-900">Transações</h1>
-        <p class="mt-1 text-sm text-gray-500">
-          Gerencie suas receitas e despesas
-        </p>
+  <div class="space-y-8 animate-fade-in">
+    <!-- Header Section -->
+    <div
+      class="relative p-6 rounded-2xl shadow-lg-custom overflow-hidden bg-gradient-to-br from-blue-500 to-blue-600 text-white"
+    >
+      <div class="absolute inset-0 opacity-10">
+        <CreditCard class="w-full h-full" />
       </div>
-      <div class="mt-4 sm:mt-0 flex items-center space-x-3">
-        <select
-          v-model="selectedMonth"
-          @change="loadTransactions"
-          class="select"
-        >
-          <option
-            v-for="month in availableMonths"
-            :key="month.value"
-            :value="month.value"
+      <div
+        class="relative z-10 flex flex-col sm:flex-row justify-between items-start sm:items-center"
+      >
+        <div>
+          <h1 class="text-3xl font-bold mb-1">Transações</h1>
+          <p class="text-blue-100 text-lg">
+            Gerencie suas receitas e despesas de forma inteligente
+          </p>
+        </div>
+        <div class="mt-4 sm:mt-0 flex items-center space-x-3">
+          <select
+            v-model="selectedMonth"
+            @change="loadTransactions"
+            class="bg-white/20 backdrop-blur-sm border-white/30 text-white placeholder-white/70 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-white/50 focus:border-white/50"
           >
-            {{ month.label }}
-          </option>
-        </select>
-        <button @click="showAddModal = true" class="btn-primary">
-          <PlusIcon class="w-4 h-4 mr-2" />
-          Nova Transação
-        </button>
+            <option
+              v-for="month in availableMonths"
+              :key="month.value"
+              :value="month.value"
+              class="text-gray-900"
+            >
+              {{ month.label }}
+            </option>
+          </select>
+          <button
+            @click="showAddModal = true"
+            class="btn-secondary text-white border-white/30 hover:bg-white/20"
+          >
+            <PlusIcon class="w-4 h-4 mr-2" />
+            Nova Transação
+          </button>
+        </div>
       </div>
     </div>
 
-    <!-- Quick Stats -->
+    <!-- Stats Cards -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <div class="card">
-        <div class="flex items-center">
-          <div class="flex-shrink-0">
-            <div
-              class="w-8 h-8 bg-success-100 rounded-lg flex items-center justify-center"
-            >
-              <ArrowUpIcon class="w-5 h-5 text-success-600" />
-            </div>
-          </div>
-          <div class="ml-4">
-            <p class="text-sm font-medium text-gray-500">Total de Receitas</p>
-            <p class="text-2xl font-semibold text-success-600">
-              {{ formatCurrency(totalIncome) }}
-            </p>
-          </div>
+      <div class="card animate-slide-up delay-100">
+        <div class="flex items-center justify-between mb-3">
+          <p class="text-sm font-medium text-slate-500">Total de Receitas</p>
+          <ArrowUpCircle class="w-5 h-5 text-emerald-500" />
+        </div>
+        <p class="text-2xl font-semibold text-slate-900">
+          {{ formatCurrency(totalIncome) }}
+        </p>
+        <div class="flex items-center text-sm text-emerald-600 mt-2">
+          <TrendingUp class="w-4 h-4 mr-1" />
+          <span>Entradas do período</span>
         </div>
       </div>
 
-      <div class="card">
-        <div class="flex items-center">
-          <div class="flex-shrink-0">
-            <div
-              class="w-8 h-8 bg-danger-100 rounded-lg flex items-center justify-center"
-            >
-              <ArrowDownIcon class="w-5 h-5 text-danger-600" />
-            </div>
-          </div>
-          <div class="ml-4">
-            <p class="text-sm font-medium text-gray-500">Total de Gastos</p>
-            <p class="text-2xl font-semibold text-danger-600">
-              {{ formatCurrency(Math.abs(totalExpenses)) }}
-            </p>
-          </div>
+      <div class="card animate-slide-up delay-200">
+        <div class="flex items-center justify-between mb-3">
+          <p class="text-sm font-medium text-slate-500">Total de Gastos</p>
+          <ArrowDownCircle class="w-5 h-5 text-red-500" />
+        </div>
+        <p class="text-2xl font-semibold text-slate-900">
+          {{ formatCurrency(Math.abs(totalExpenses)) }}
+        </p>
+        <div class="flex items-center text-sm text-red-600 mt-2">
+          <TrendingDown class="w-4 h-4 mr-1" />
+          <span>Saídas do período</span>
         </div>
       </div>
 
-      <div class="card">
-        <div class="flex items-center">
-          <div class="flex-shrink-0">
-            <div
-              class="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center"
-            >
-              <ScaleIcon class="w-5 h-5 text-primary-600" />
-            </div>
-          </div>
-          <div class="ml-4">
-            <p class="text-sm font-medium text-gray-500">Saldo</p>
-            <p
-              class="text-2xl font-semibold"
-              :class="balance >= 0 ? 'text-success-600' : 'text-danger-600'"
-            >
-              {{ formatCurrency(balance) }}
-            </p>
-          </div>
+      <div class="card animate-slide-up delay-300">
+        <div class="flex items-center justify-between mb-3">
+          <p class="text-sm font-medium text-slate-500">Saldo</p>
+          <Wallet class="w-5 h-5 text-blue-500" />
+        </div>
+        <p class="text-2xl font-semibold text-slate-900">
+          {{ formatCurrency(balance) }}
+        </p>
+        <div
+          class="flex items-center text-sm mt-2"
+          :class="balance >= 0 ? 'text-emerald-600' : 'text-red-600'"
+        >
+          <template v-if="balance >= 0">
+            <ArrowUp class="w-4 h-4 mr-1" />
+            <span>Saldo Positivo</span>
+          </template>
+          <template v-else>
+            <ArrowDown class="w-4 h-4 mr-1" />
+            <span>Saldo Negativo</span>
+          </template>
         </div>
       </div>
     </div>
 
     <!-- Filters -->
-    <div class="card">
+    <div class="card animate-slide-up delay-400">
       <div class="flex flex-wrap items-center gap-4">
         <div class="flex items-center space-x-2">
-          <label class="text-sm font-medium text-gray-700">Tipo:</label>
+          <label class="text-sm font-medium text-slate-700">Tipo:</label>
           <select
             v-model="filters.type"
             @change="applyFilters"
-            class="select text-sm"
+            class="bg-slate-50 border-slate-200 text-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           >
             <option value="">Todos</option>
             <option value="INCOME">Receitas</option>
@@ -106,11 +113,11 @@
         </div>
 
         <div class="flex items-center space-x-2">
-          <label class="text-sm font-medium text-gray-700">Status:</label>
+          <label class="text-sm font-medium text-slate-700">Status:</label>
           <select
             v-model="filters.status"
             @change="applyFilters"
-            class="select text-sm"
+            class="bg-slate-50 border-slate-200 text-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           >
             <option value="">Todos</option>
             <option value="PLANNED">Planejado</option>
@@ -119,11 +126,11 @@
         </div>
 
         <div class="flex items-center space-x-2">
-          <label class="text-sm font-medium text-gray-700">Categoria:</label>
+          <label class="text-sm font-medium text-slate-700">Categoria:</label>
           <select
             v-model="filters.category"
             @change="applyFilters"
-            class="select text-sm"
+            class="bg-slate-50 border-slate-200 text-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           >
             <option value="">Todas</option>
             <option
@@ -136,113 +143,114 @@
           </select>
         </div>
 
-        <div class="flex items-center space-x-2">
-          <MagnifyingGlassIcon class="w-4 h-4 text-gray-400" />
+        <div class="flex items-center space-x-2 flex-1 min-w-64">
+          <MagnifyingGlassIcon class="w-4 h-4 text-slate-400" />
           <input
             v-model="filters.search"
             @input="applyFilters"
             placeholder="Buscar transações..."
-            class="input text-sm"
+            class="bg-slate-50 border-slate-200 text-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 flex-1"
           />
         </div>
 
         <button @click="clearFilters" class="btn-secondary text-sm">
+          <X class="w-4 h-4 mr-2" />
           Limpar Filtros
         </button>
       </div>
     </div>
 
     <!-- Transactions Table -->
-    <div class="card">
-      <div class="flex items-center justify-between mb-4">
-        <h3 class="text-lg font-semibold text-gray-900">
+    <div class="card animate-slide-up delay-500">
+      <div class="flex items-center justify-between mb-6">
+        <h3 class="text-xl font-semibold text-slate-900">
           Transações ({{ filteredTransactions.length }})
         </h3>
         <div class="flex items-center space-x-2">
           <button @click="exportTransactions" class="btn-secondary text-sm">
-            <ArrowDownTrayIcon class="w-4 h-4 mr-2" />
+            <Download class="w-4 h-4 mr-2" />
             Exportar
           </button>
         </div>
       </div>
 
       <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200">
-          <thead class="bg-gray-50">
+        <table class="min-w-full divide-y divide-slate-200">
+          <thead class="bg-slate-50">
             <tr>
               <th
-                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors"
                 @click="sortBy('date')"
               >
                 Data
-                <ChevronUpDownIcon class="w-4 h-4 inline ml-1" />
+                <ChevronUpDown class="w-4 h-4 inline ml-1" />
               </th>
               <th
-                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider"
               >
                 Tipo
               </th>
               <th
-                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors"
                 @click="sortBy('category')"
               >
                 Categoria
-                <ChevronUpDownIcon class="w-4 h-4 inline ml-1" />
+                <ChevronUpDown class="w-4 h-4 inline ml-1" />
               </th>
               <th
-                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider"
               >
                 Descrição
               </th>
               <th
-                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors"
                 @click="sortBy('amount')"
               >
                 Valor
-                <ChevronUpDownIcon class="w-4 h-4 inline ml-1" />
+                <ChevronUpDown class="w-4 h-4 inline ml-1" />
               </th>
               <th
-                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider"
               >
                 Status
               </th>
               <th
-                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider"
               >
                 Ações
               </th>
             </tr>
           </thead>
-          <tbody class="bg-white divide-y divide-gray-200">
+          <tbody class="bg-white divide-y divide-slate-200">
             <tr
               v-for="transaction in paginatedTransactions"
               :key="transaction._id"
-              class="hover:bg-gray-50 transition-colors duration-150"
+              class="hover:bg-slate-50 transition-colors duration-200"
             >
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
                 {{ formatDate(transaction.date) }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
                 <span
-                  class="badge"
+                  class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
                   :class="
                     transaction.type === 'INCOME'
-                      ? 'badge-success'
-                      : 'badge-danger'
+                      ? 'bg-emerald-100 text-emerald-800'
+                      : 'bg-red-100 text-red-800'
                   "
                 >
-                  <ArrowUpIcon
+                  <ArrowUp
                     v-if="transaction.type === 'INCOME'"
                     class="w-3 h-3 mr-1"
                   />
-                  <ArrowDownIcon v-else class="w-3 h-3 mr-1" />
+                  <ArrowDown v-else class="w-3 h-3 mr-1" />
                   {{ transaction.type === "INCOME" ? "Receita" : "Gasto" }}
                 </span>
               </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
                 {{ transaction.category }}
               </td>
-              <td class="px-6 py-4 text-sm text-gray-900">
+              <td class="px-6 py-4 text-sm text-slate-900">
                 <div class="max-w-xs truncate">
                   {{ transaction.description || "Sem descrição" }}
                 </div>
@@ -251,8 +259,8 @@
                 class="px-6 py-4 whitespace-nowrap text-sm font-medium"
                 :class="
                   transaction.type === 'INCOME'
-                    ? 'text-success-600'
-                    : 'text-danger-600'
+                    ? 'text-emerald-600'
+                    : 'text-red-600'
                 "
               >
                 {{ transaction.type === "INCOME" ? "+" : "-"
@@ -266,11 +274,11 @@
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
                 <span
-                  class="badge"
+                  class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
                   :class="
                     transaction.status === 'PAID'
-                      ? 'badge-success'
-                      : 'badge-warning'
+                      ? 'bg-emerald-100 text-emerald-800'
+                      : 'bg-amber-100 text-amber-800'
                   "
                 >
                   {{ transaction.status === "PAID" ? "Pago" : "Planejado" }}
@@ -280,22 +288,25 @@
                 <div class="flex items-center space-x-2">
                   <button
                     @click="editTransaction(transaction)"
-                    class="text-primary-600 hover:text-primary-900"
+                    class="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                    title="Editar"
                   >
-                    <PencilIcon class="w-4 h-4" />
+                    <Edit class="w-4 h-4" />
                   </button>
                   <button
                     @click="deleteTransaction(transaction)"
-                    class="text-danger-600 hover:text-danger-900"
+                    class="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    title="Excluir"
                   >
-                    <TrashIcon class="w-4 h-4" />
+                    <Trash2 class="w-4 h-4" />
                   </button>
                   <button
                     v-if="transaction.status === 'PLANNED'"
                     @click="markAsPaid(transaction)"
-                    class="text-success-600 hover:text-success-900"
+                    class="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                    title="Marcar como Pago"
                   >
-                    <CheckIcon class="w-4 h-4" />
+                    <Check class="w-4 h-4" />
                   </button>
                 </div>
               </td>
@@ -356,30 +367,40 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
-import api from "../api/http";
+import { useTransactionStore } from "../stores/transactionStore";
+import TransactionModal from "../components/TransactionModal.vue";
+import {
+  CreditCard,
+  Plus as PlusIcon,
+  ArrowUpCircle,
+  ArrowDownCircle,
+  TrendingUp,
+  TrendingDown,
+  Wallet,
+  ArrowUp,
+  ArrowDown,
+  Search as MagnifyingGlassIcon,
+  X,
+  Download,
+  ChevronsUpDown as ChevronUpDown,
+  Edit,
+  Trash2,
+  Check,
+} from "lucide-vue-next";
 
-// Types
-interface Transaction {
-  _id?: string;
-  date: string;
-  type: "INCOME" | "EXPENSE";
-  category: string;
-  description?: string;
-  plannedAmount?: number;
-  amount?: number;
-  account?: string;
-  isFixed?: boolean;
-  status?: "PLANNED" | "PAID";
-}
+// Import types from service
+import type { Transaction } from "../services/transactionService";
+
+// Store
+const transactionStore = useTransactionStore();
 
 // Reactive data
-const transactions = ref<Transaction[]>([]);
 const categories = ref<string[]>([]);
 const selectedMonth = ref("");
 const availableMonths = ref<Array<{ value: string; label: string }>>([]);
 const showAddModal = ref(false);
 const showEditModal = ref(false);
-const editingTransaction = ref<Transaction | null>(null);
+const editingTransaction = ref<Transaction | null | undefined>(null);
 const currentPage = ref(1);
 const itemsPerPage = 10;
 const sortField = ref("date");
@@ -395,7 +416,7 @@ const filters = ref({
 
 // Initialize months
 const initializeMonths = () => {
-  const months = [];
+  const months: Array<{ value: string; label: string }> = [];
   const now = new Date();
 
   for (let i = 0; i < 12; i++) {
@@ -420,7 +441,7 @@ const initializeMonths = () => {
 
 // Computed properties
 const filteredTransactions = computed(() => {
-  let filtered = [...transactions.value];
+  let filtered = [...transactionStore.transactions];
 
   // Apply filters
   if (filters.value.type) {
@@ -477,19 +498,11 @@ const totalPages = computed(() => {
   return Math.ceil(filteredTransactions.value.length / itemsPerPage);
 });
 
-const totalIncome = computed(() => {
-  return transactions.value
-    .filter((t) => t.type === "INCOME")
-    .reduce((sum, t) => sum + (t.amount || t.plannedAmount || 0), 0);
-});
+const totalIncome = computed(() => transactionStore.totalIncome);
 
-const totalExpenses = computed(() => {
-  return transactions.value
-    .filter((t) => t.type === "EXPENSE")
-    .reduce((sum, t) => sum + (t.amount || t.plannedAmount || 0), 0);
-});
+const totalExpenses = computed(() => transactionStore.totalExpenses);
 
-const balance = computed(() => totalIncome.value + totalExpenses.value);
+const balance = computed(() => transactionStore.balance);
 
 // Utility functions
 const formatCurrency = (value: number) => {
@@ -509,14 +522,21 @@ const getMonth = () => Number(selectedMonth.value.split("-")[1]);
 // Data loading
 const loadTransactions = async () => {
   try {
-    const response = await api.get("/api/transactions", {
-      params: { year: getYear(), month: getMonth() },
+    const startDate = new Date(getYear(), getMonth() - 1, 1)
+      .toISOString()
+      .split("T")[0];
+    const endDate = new Date(getYear(), getMonth(), 0)
+      .toISOString()
+      .split("T")[0];
+
+    await transactionStore.fetchTransactions({
+      startDate,
+      endDate,
     });
-    transactions.value = response.data;
 
     // Extract unique categories
     const uniqueCategories = [
-      ...new Set(transactions.value.map((t) => t.category)),
+      ...new Set(transactionStore.transactions.map((t) => t.category)),
     ];
     categories.value = uniqueCategories.sort();
   } catch (error) {
@@ -557,7 +577,7 @@ const deleteTransaction = async (transaction: Transaction) => {
   if (!confirm("Tem certeza que deseja excluir esta transação?")) return;
 
   try {
-    await api.delete(`/api/transactions/${transaction._id}`);
+    await transactionStore.deleteTransaction(transaction._id!);
     await loadTransactions();
   } catch (error) {
     console.error("Error deleting transaction:", error);
@@ -566,11 +586,10 @@ const deleteTransaction = async (transaction: Transaction) => {
 
 const markAsPaid = async (transaction: Transaction) => {
   try {
-    await api.put(`/api/transactions/${transaction._id}`, {
-      ...transaction,
-      status: "PAID",
-      amount: transaction.amount || transaction.plannedAmount,
-    });
+    await transactionStore.markAsPaid(
+      transaction._id!,
+      transaction.amount || transaction.plannedAmount
+    );
     await loadTransactions();
   } catch (error) {
     console.error("Error marking transaction as paid:", error);

@@ -25,7 +25,7 @@
               <div
                 class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-primary-100 sm:mx-0 sm:h-10 sm:w-10"
               >
-                <CreditCardIcon class="h-6 w-6 text-primary-600" />
+                <CreditCard class="h-6 w-6 text-primary-600" />
               </div>
               <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left flex-1">
                 <h3
@@ -51,7 +51,7 @@
                             : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
                         "
                       >
-                        <ArrowUpIcon class="w-4 h-4 mr-2" />
+                        <ArrowUp class="w-4 h-4 mr-2" />
                         Receita
                       </button>
                       <button
@@ -64,7 +64,7 @@
                             : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
                         "
                       >
-                        <ArrowDownIcon class="w-4 h-4 mr-2" />
+                        <ArrowDown class="w-4 h-4 mr-2" />
                         Gasto
                       </button>
                     </div>
@@ -259,12 +259,8 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
-import api from "../api/http";
-import {
-  CreditCardIcon,
-  ArrowUpIcon,
-  ArrowDownIcon,
-} from "@heroicons/vue/24/outline";
+import { useTransactionStore } from "../stores/transactionStore";
+import { CreditCard, ArrowUp, ArrowDown } from "lucide-vue-next";
 
 // Props
 interface Transaction {
@@ -295,6 +291,9 @@ const emit = defineEmits<{
   close: [];
   save: [];
 }>();
+
+// Store
+const transactionStore = useTransactionStore();
 
 // Reactive data
 const loading = ref(false);
@@ -342,11 +341,11 @@ const handleSubmit = async () => {
       amount: form.value.amount ? Math.abs(form.value.amount) : undefined,
     };
 
-    // Make API call
+    // Use store instead of direct API call
     if (isEditing.value) {
-      await api.put(`/api/transactions/${props.transaction!._id}`, data);
+      await transactionStore.updateTransaction(props.transaction!._id!, data);
     } else {
-      await api.post("/api/transactions", data);
+      await transactionStore.createTransaction(data);
     }
 
     emit("save");
@@ -386,4 +385,10 @@ watch(
     }
   }
 );
+</script>
+
+<script lang="ts">
+export default {
+  name: "TransactionModal",
+};
 </script>

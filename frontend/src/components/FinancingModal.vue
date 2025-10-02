@@ -25,7 +25,7 @@
               <div
                 class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-primary-100 sm:mx-0 sm:h-10 sm:w-10"
               >
-                <DocumentTextIcon class="h-6 w-6 text-primary-600" />
+                <FileText class="h-6 w-6 text-primary-600" />
               </div>
               <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left flex-1">
                 <h3
@@ -277,14 +277,14 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
-import api from "../api/http";
-import { DocumentTextIcon } from "@heroicons/vue/24/outline";
+import { useFinancingStore } from "../stores/financingStore";
+import { FileText } from "lucide-vue-next";
 
 // Props
 interface Financing {
   _id?: string;
   description: string;
-  type: string;
+  type: "LOAN" | "FINANCING" | "CREDIT_CARD";
   originalAmount: number;
   outstandingBalance: number;
   installmentAmount: number;
@@ -292,7 +292,8 @@ interface Financing {
   paidInstallments: number;
   interestRate: number;
   startDate: string;
-  status: "ACTIVE" | "COMPLETED" | "SUSPENDED";
+  endDate: string;
+  isActive: boolean;
 }
 
 interface Props {
@@ -310,11 +311,14 @@ const emit = defineEmits<{
   save: [];
 }>();
 
+// Store
+const financingStore = useFinancingStore();
+
 // Reactive data
 const loading = ref(false);
 const form = ref<Financing>({
   description: "",
-  type: "",
+  type: "FINANCING",
   originalAmount: 0,
   outstandingBalance: 0,
   installmentAmount: 0,
@@ -322,7 +326,10 @@ const form = ref<Financing>({
   paidInstallments: 0,
   interestRate: 0,
   startDate: new Date().toISOString().slice(0, 10),
-  status: "ACTIVE",
+  endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
+    .toISOString()
+    .slice(0, 10),
+  isActive: true,
 });
 
 // Computed
@@ -332,7 +339,7 @@ const isEditing = computed(() => !!props.financing?._id);
 const resetForm = () => {
   form.value = {
     description: "",
-    type: "",
+    type: "FINANCING",
     originalAmount: 0,
     outstandingBalance: 0,
     installmentAmount: 0,
@@ -340,7 +347,10 @@ const resetForm = () => {
     paidInstallments: 0,
     interestRate: 0,
     startDate: new Date().toISOString().slice(0, 10),
-    status: "ACTIVE",
+    endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1))
+      .toISOString()
+      .slice(0, 10),
+    isActive: true,
   };
 };
 
@@ -348,11 +358,11 @@ const handleSubmit = async () => {
   try {
     loading.value = true;
 
-    // Make API call
+    // Use store instead of direct API call
     if (isEditing.value) {
-      await api.put(`/api/financing/${props.financing!._id}`, form.value);
+      await financingStore.updateFinancing(props.financing!._id!, form.value);
     } else {
-      await api.post("/api/financing", form.value);
+      await financingStore.createFinancing(form.value);
     }
 
     emit("save");
@@ -392,4 +402,10 @@ watch(
     }
   }
 );
+</script>
+
+<script lang="ts">
+export default {
+  name: "FinancingModal",
+};
 </script>

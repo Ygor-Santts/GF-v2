@@ -25,7 +25,7 @@
               <div
                 class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-primary-100 sm:mx-0 sm:h-10 sm:w-10"
               >
-                <ArrowPathIcon class="h-6 w-6 text-primary-600" />
+                <RotateCcw class="h-6 w-6 text-primary-600" />
               </div>
               <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left flex-1">
                 <h3
@@ -55,7 +55,7 @@
                             : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
                         "
                       >
-                        <ArrowUpIcon class="w-4 h-4 mr-2" />
+                        <ArrowUp class="w-4 h-4 mr-2" />
                         Receita
                       </button>
                       <button
@@ -68,7 +68,7 @@
                             : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
                         "
                       >
-                        <ArrowDownIcon class="w-4 h-4 mr-2" />
+                        <ArrowDown class="w-4 h-4 mr-2" />
                         Gasto
                       </button>
                     </div>
@@ -244,12 +244,8 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
-import api from "../api/http";
-import {
-  ArrowPathIcon,
-  ArrowUpIcon,
-  ArrowDownIcon,
-} from "@heroicons/vue/24/outline";
+import { useRecurringStore } from "../stores/recurringStore";
+import { RotateCcw, ArrowUp, ArrowDown } from "lucide-vue-next";
 
 // Props
 interface RecurringTransaction {
@@ -278,6 +274,9 @@ const emit = defineEmits<{
   close: [];
   save: [];
 }>();
+
+// Store
+const recurringStore = useRecurringStore();
 
 // Reactive data
 const loading = ref(false);
@@ -320,11 +319,11 @@ const handleSubmit = async () => {
       endDate: form.value.endDate || undefined, // Convert empty string to undefined
     };
 
-    // Make API call
+    // Use store instead of direct API call
     if (isEditing.value) {
-      await api.put(`/api/recurring/${props.recurring!._id}`, data);
+      await recurringStore.updateRecurring(props.recurring!._id!, data);
     } else {
-      await api.post("/api/recurring", data);
+      await recurringStore.createRecurring(data);
     }
 
     emit("save");

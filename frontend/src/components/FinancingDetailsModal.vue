@@ -234,8 +234,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from "vue";
-import { XMarkIcon, CreditCardIcon } from "@heroicons/vue/24/outline";
+import { ref } from "vue";
 
 // Props
 interface Financing {
@@ -338,5 +337,11 @@ const payInstallment = () => {
   // This would trigger the parent component to handle the payment
   console.log("Pay installment for financing:", props.financing?._id);
   emit("close");
+};
+</script>
+
+<script lang="ts">
+export default {
+  name: "FinancingDetailsModal",
 };
 </script>

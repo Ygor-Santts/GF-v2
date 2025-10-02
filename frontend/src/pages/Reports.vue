@@ -264,7 +264,7 @@
           <div>
             <div class="flex items-center justify-between mb-2">
               <span class="text-sm font-medium text-gray-700"
-                >Meta de Economia (20%)</span
+                >Meta de Economia ({{ summary.savingsRate.toFixed(1) }}%)</span
               >
               <span class="text-sm text-gray-500">{{
                 formatCurrency(savingsGoal)
@@ -363,22 +363,18 @@
 <script setup lang="ts">
 import { Chart, registerables } from "chart.js";
 import { computed, nextTick, onMounted, ref } from "vue";
-import api from "../api/http";
+import { useTransactionStore } from "../stores/transactionStore";
+import { useDashboardStore } from "../stores/dashboardStore";
 
 Chart.register(...registerables);
+
+// Stores
+const transactionStore = useTransactionStore();
+const dashboardStore = useDashboardStore();
 
 // Reactive data
 const selectedPeriod = ref("current");
 const categoryType = ref("EXPENSE");
-const summary = ref({
-  totalIncome: 0,
-  totalExpenses: 0,
-  netBalance: 0,
-  incomeGrowth: 0,
-  expenseGrowth: 0,
-  savingsRate: 0,
-  monthlyAverage: 0,
-});
 
 const topExpenseCategories = ref<
   Array<{ name: string; amount: number; percentage: number; color: string }>
@@ -387,6 +383,9 @@ const bestMonth = ref({ month: "", balance: 0 });
 const worstMonth = ref({ month: "", balance: 0 });
 const insights = ref<string[]>([]);
 const recommendations = ref<string[]>([]);
+
+// Computed from stores
+const summary = computed(() => dashboardStore.summary);
 
 // Chart refs
 const monthlyTrendChart = ref<HTMLCanvasElement>();
@@ -417,19 +416,13 @@ const formatCurrency = (value: number) => {
 // Data loading
 const loadReports = async () => {
   try {
-    // Load summary data
-    const summaryRes = await api.get("/api/reports/summary", {
-      params: { period: selectedPeriod.value },
-    });
-    summary.value = summaryRes.data;
-
-    // Load category data
-    const categoryRes = await api.get("/api/reports/categories", {
-      params: { period: selectedPeriod.value, type: categoryType.value },
+    // Load dashboard data which includes summary and categories
+    await dashboardStore.fetchDashboardData({
+      period: selectedPeriod.value as any,
     });
 
-    // Process category data
-    const categories = categoryRes.data || [];
+    // Process category data from store
+    const categories = dashboardStore.expenseCategories;
     const total = categories.reduce(
       (sum: number, cat: any) => sum + Math.abs(cat.amount),
       0
@@ -491,7 +484,7 @@ const generateRecommendations = () => {
 
   if (summary.value.savingsRate < 20) {
     recommendations.push(
-      "Tente economizar pelo menos 20% da sua renda mensal."
+      "Tente economizar pelo menos 10% da sua renda mensal."
     );
   }
 
@@ -544,10 +537,13 @@ const updateMonthlyTrendChart = () => {
   const ctx = monthlyTrendChart.value.getContext("2d");
   if (!ctx) return;
 
-  // Sample data - replace with real data
-  const months = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun"];
-  const incomeData = [5000, 5200, 4800, 5500, 5300, 5600];
-  const expenseData = [3500, 3800, 3200, 4100, 3900, 4200];
+  // Use real data from store
+  const monthlyData = dashboardStore.monthlyData;
+  const months = monthlyData.map((item) =>
+    dashboardStore.getMonthName(item.month)
+  );
+  const incomeData = monthlyData.map((item) => item.income);
+  const expenseData = monthlyData.map((item) => item.expenses);
 
   monthlyTrendChartInstance = new Chart(ctx, {
     type: "line",
