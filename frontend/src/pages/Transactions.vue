@@ -207,6 +207,7 @@
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
                 <Badge
+                  size="md"
                   :variant="
                     transaction.type === 'INCOME' ? 'success' : 'danger'
                   "
@@ -242,6 +243,7 @@
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
                 <Badge
+                  size="md"
                   :variant="
                     transaction.status === 'PAID' ? 'success' : 'warning'
                   "
