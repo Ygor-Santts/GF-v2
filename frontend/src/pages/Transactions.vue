@@ -15,10 +15,11 @@
           class="bg-white/20 backdrop-blur-sm border-white/30 text-white placeholder-white/70"
         />
         <Button
+          size="lg"
           variant="secondary"
           @click="showAddModal = true"
           :icon="PlusIcon"
-          class="text-white border-white/30 hover:bg-white/20"
+          class="text-black border-black/30 hover:bg-black/20"
         >
           Nova Transação
         </Button>

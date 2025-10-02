@@ -5,3 +5,4 @@ export { default as MetricCard } from "./MetricCard.vue";
 export { default as PageHeader } from "./PageHeader.vue";
 export { default as Input } from "./Input.vue";
 export { default as Select } from "./Select.vue";
+export { default as Tooltip } from "./Tooltip.vue";
