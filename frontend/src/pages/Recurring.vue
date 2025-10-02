@@ -228,7 +228,6 @@
 import { ref, computed, onMounted } from "vue";
 import { useRecurringStore } from "../stores/recurringStore";
 import RecurringModal from "../components/RecurringModal.vue";
-
 // Types
 interface RecurringTransaction {
   _id?: string;

@@ -172,7 +172,7 @@ router.get("/:id/payments", async (req, res) => {
 // POST /api/financing - Criar novo financiamento
 router.post("/", async (req, res) => {
   try {
-    const parsed = finSchema.safeParse(req.body);
+  const parsed = finSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({
         error: "Dados inválidos",
@@ -389,8 +389,8 @@ router.post("/:id/early-payment", async (req, res) => {
 // PUT /api/financing/:id - Atualizar financiamento
 router.put("/:id", async (req, res) => {
   try {
-    const { id } = req.params;
-    const parsed = finSchema.partial().safeParse(req.body);
+  const { id } = req.params;
+  const parsed = finSchema.partial().safeParse(req.body);
 
     if (!parsed.success) {
       return res.status(400).json({
@@ -447,14 +447,14 @@ router.put("/:id", async (req, res) => {
 // DELETE /api/financing/:id - Deletar financiamento
 router.delete("/:id", async (req, res) => {
   try {
-    const { id } = req.params;
+  const { id } = req.params;
     const deleted = await Financing.findByIdAndDelete(id);
 
     if (!deleted) {
       return res.status(404).json({ error: "Financiamento não encontrado" });
     }
 
-    res.status(204).send();
+  res.status(204).send();
   } catch (error) {
     console.error("Erro ao deletar financiamento:", error);
     res.status(500).json({ error: "Erro interno do servidor" });

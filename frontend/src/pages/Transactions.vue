@@ -1,178 +1,153 @@
 <template>
   <div class="space-y-8 animate-fade-in">
     <!-- Header Section -->
-    <div
-      class="relative p-6 rounded-2xl shadow-lg-custom overflow-hidden bg-gradient-to-br from-blue-500 to-blue-600 text-white"
+    <PageHeader
+      title="Transações"
+      subtitle="Gerencie suas receitas e despesas de forma inteligente"
+      :background-icon="CreditCard"
     >
-      <div class="absolute inset-0 opacity-10">
-        <CreditCard class="w-full h-full" />
-      </div>
-      <div
-        class="relative z-10 flex flex-col sm:flex-row justify-between items-start sm:items-center"
-      >
-        <div>
-          <h1 class="text-3xl font-bold mb-1">Transações</h1>
-          <p class="text-blue-100 text-lg">
-            Gerencie suas receitas e despesas de forma inteligente
-          </p>
-        </div>
-        <div class="mt-4 sm:mt-0 flex items-center space-x-3">
-          <select
-            v-model="selectedMonth"
-            @change="loadTransactions"
-            class="bg-white/20 backdrop-blur-sm border-white/30 text-white placeholder-white/70 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-white/50 focus:border-white/50"
-          >
-            <option
-              v-for="month in availableMonths"
-              :key="month.value"
-              :value="month.value"
-              class="text-gray-900"
-            >
-              {{ month.label }}
-            </option>
-          </select>
-          <button
-            @click="showAddModal = true"
-            class="btn-secondary text-white border-white/30 hover:bg-white/20"
-          >
-            <PlusIcon class="w-4 h-4 mr-2" />
-            Nova Transação
-          </button>
-        </div>
-      </div>
-    </div>
+      <template #actions>
+        <Select
+          v-model="selectedMonth"
+          @change="loadTransactions"
+          :options="availableMonths"
+          placeholder="Selecionar mês"
+          class="bg-white/20 backdrop-blur-sm border-white/30 text-white placeholder-white/70"
+        />
+        <Button
+          variant="secondary"
+          @click="showAddModal = true"
+          :icon="PlusIcon"
+          class="text-white border-white/30 hover:bg-white/20"
+        >
+          Nova Transação
+        </Button>
+      </template>
+    </PageHeader>
 
     <!-- Stats Cards -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <div class="card animate-slide-up delay-100">
-        <div class="flex items-center justify-between mb-3">
-          <p class="text-sm font-medium text-slate-500">Total de Receitas</p>
-          <ArrowUpCircle class="w-5 h-5 text-emerald-500" />
-        </div>
-        <p class="text-2xl font-semibold text-slate-900">
-          {{ formatCurrency(totalIncome) }}
-        </p>
-        <div class="flex items-center text-sm text-emerald-600 mt-2">
-          <TrendingUp class="w-4 h-4 mr-1" />
-          <span>Entradas do período</span>
-        </div>
-      </div>
+      <MetricCard
+        label="Total de Receitas"
+        :value="totalIncome"
+        :icon="ArrowUpCircle"
+        icon-color="emerald"
+        :format="'currency'"
+        :trend="'up'"
+        trend-text="Entradas do período"
+        :trend-icon="TrendingUp"
+        :animate="true"
+        :delay="1"
+      />
 
-      <div class="card animate-slide-up delay-200">
-        <div class="flex items-center justify-between mb-3">
-          <p class="text-sm font-medium text-slate-500">Total de Gastos</p>
-          <ArrowDownCircle class="w-5 h-5 text-red-500" />
-        </div>
-        <p class="text-2xl font-semibold text-slate-900">
-          {{ formatCurrency(Math.abs(totalExpenses)) }}
-        </p>
-        <div class="flex items-center text-sm text-red-600 mt-2">
-          <TrendingDown class="w-4 h-4 mr-1" />
-          <span>Saídas do período</span>
-        </div>
-      </div>
+      <MetricCard
+        label="Total de Gastos"
+        :value="Math.abs(totalExpenses)"
+        :icon="ArrowDownCircle"
+        icon-color="red"
+        :format="'currency'"
+        :trend="'down'"
+        trend-text="Saídas do período"
+        :trend-icon="TrendingDown"
+        :animate="true"
+        :delay="2"
+      />
 
-      <div class="card animate-slide-up delay-300">
-        <div class="flex items-center justify-between mb-3">
-          <p class="text-sm font-medium text-slate-500">Saldo</p>
-          <Wallet class="w-5 h-5 text-blue-500" />
-        </div>
-        <p class="text-2xl font-semibold text-slate-900">
-          {{ formatCurrency(balance) }}
-        </p>
-        <div
-          class="flex items-center text-sm mt-2"
-          :class="balance >= 0 ? 'text-emerald-600' : 'text-red-600'"
-        >
-          <template v-if="balance >= 0">
-            <ArrowUp class="w-4 h-4 mr-1" />
-            <span>Saldo Positivo</span>
-          </template>
-          <template v-else>
-            <ArrowDown class="w-4 h-4 mr-1" />
-            <span>Saldo Negativo</span>
-          </template>
-        </div>
-      </div>
+      <MetricCard
+        label="Saldo"
+        :value="balance"
+        :icon="Wallet"
+        icon-color="blue"
+        :format="'currency'"
+        :value-color="balance >= 0 ? 'success' : 'danger'"
+        :trend="balance >= 0 ? 'up' : 'down'"
+        :trend-text="balance >= 0 ? 'Saldo Positivo' : 'Saldo Negativo'"
+        :trend-icon="balance >= 0 ? ArrowUp : ArrowDown"
+        :animate="true"
+        :delay="3"
+      />
     </div>
 
     <!-- Filters -->
-    <div class="card animate-slide-up delay-400">
+    <Card :animate="true" :delay="4">
       <div class="flex flex-wrap items-center gap-4">
         <div class="flex items-center space-x-2">
           <label class="text-sm font-medium text-slate-700">Tipo:</label>
-          <select
+          <Select
             v-model="filters.type"
             @change="applyFilters"
-            class="bg-slate-50 border-slate-200 text-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          >
-            <option value="">Todos</option>
-            <option value="INCOME">Receitas</option>
-            <option value="EXPENSE">Gastos</option>
-          </select>
+            :options="[
+              { value: '', label: 'Todos' },
+              { value: 'INCOME', label: 'Receitas' },
+              { value: 'EXPENSE', label: 'Gastos' },
+            ]"
+            size="sm"
+          />
         </div>
 
         <div class="flex items-center space-x-2">
           <label class="text-sm font-medium text-slate-700">Status:</label>
-          <select
+          <Select
             v-model="filters.status"
             @change="applyFilters"
-            class="bg-slate-50 border-slate-200 text-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          >
-            <option value="">Todos</option>
-            <option value="PLANNED">Planejado</option>
-            <option value="PAID">Pago</option>
-          </select>
+            :options="[
+              { value: '', label: 'Todos' },
+              { value: 'PLANNED', label: 'Planejado' },
+              { value: 'PAID', label: 'Pago' },
+            ]"
+            size="sm"
+          />
         </div>
 
         <div class="flex items-center space-x-2">
           <label class="text-sm font-medium text-slate-700">Categoria:</label>
-          <select
+          <Select
             v-model="filters.category"
             @change="applyFilters"
-            class="bg-slate-50 border-slate-200 text-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          >
-            <option value="">Todas</option>
-            <option
-              v-for="category in categories"
-              :key="category"
-              :value="category"
-            >
-              {{ category }}
-            </option>
-          </select>
-        </div>
-
-        <div class="flex items-center space-x-2 flex-1 min-w-64">
-          <MagnifyingGlassIcon class="w-4 h-4 text-slate-400" />
-          <input
-            v-model="filters.search"
-            @input="applyFilters"
-            placeholder="Buscar transações..."
-            class="bg-slate-50 border-slate-200 text-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 flex-1"
+            :options="[
+              { value: '', label: 'Todas' },
+              ...categories.map((cat) => ({ value: cat, label: cat })),
+            ]"
+            size="sm"
           />
         </div>
 
-        <button @click="clearFilters" class="btn-secondary text-sm">
-          <X class="w-4 h-4 mr-2" />
+        <div class="flex items-center space-x-2 flex-1 min-w-64">
+          <Input
+            v-model="filters.search"
+            @input="applyFilters"
+            placeholder="Buscar transações..."
+            :icon="MagnifyingGlassIcon"
+            size="sm"
+            class="flex-1"
+          />
+        </div>
+
+        <Button variant="secondary" size="sm" @click="clearFilters" :icon="X">
           Limpar Filtros
-        </button>
+        </Button>
       </div>
-    </div>
+    </Card>
 
     <!-- Transactions Table -->
-    <div class="card animate-slide-up delay-500">
-      <div class="flex items-center justify-between mb-6">
-        <h3 class="text-xl font-semibold text-slate-900">
-          Transações ({{ filteredTransactions.length }})
-        </h3>
-        <div class="flex items-center space-x-2">
-          <button @click="exportTransactions" class="btn-secondary text-sm">
-            <Download class="w-4 h-4 mr-2" />
-            Exportar
-          </button>
+    <Card :animate="true" :delay="5">
+      <template #header>
+        <div class="flex items-center justify-between">
+          <h3 class="text-xl font-semibold text-slate-900">
+            Transações ({{ filteredTransactions.length }})
+          </h3>
+          <div class="flex items-center space-x-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              @click="exportTransactions"
+              :icon="Download"
+            >
+              Exportar
+            </Button>
+          </div>
         </div>
-      </div>
+      </template>
 
       <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-slate-200">
@@ -231,21 +206,14 @@
                 {{ formatDate(transaction.date) }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
-                <span
-                  class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
-                  :class="
-                    transaction.type === 'INCOME'
-                      ? 'bg-emerald-100 text-emerald-800'
-                      : 'bg-red-100 text-red-800'
+                <Badge
+                  :variant="
+                    transaction.type === 'INCOME' ? 'success' : 'danger'
                   "
+                  :icon="transaction.type === 'INCOME' ? ArrowUp : ArrowDown"
                 >
-                  <ArrowUp
-                    v-if="transaction.type === 'INCOME'"
-                    class="w-3 h-3 mr-1"
-                  />
-                  <ArrowDown v-else class="w-3 h-3 mr-1" />
                   {{ transaction.type === "INCOME" ? "Receita" : "Gasto" }}
-                </span>
+                </Badge>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
                 {{ transaction.category }}
@@ -273,41 +241,40 @@
                 }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
-                <span
-                  class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
-                  :class="
-                    transaction.status === 'PAID'
-                      ? 'bg-emerald-100 text-emerald-800'
-                      : 'bg-amber-100 text-amber-800'
+                <Badge
+                  :variant="
+                    transaction.status === 'PAID' ? 'success' : 'warning'
                   "
                 >
                   {{ transaction.status === "PAID" ? "Pago" : "Planejado" }}
-                </span>
+                </Badge>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                 <div class="flex items-center space-x-2">
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     @click="editTransaction(transaction)"
-                    class="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                    :icon="Edit"
                     title="Editar"
-                  >
-                    <Edit class="w-4 h-4" />
-                  </button>
-                  <button
+                  />
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     @click="deleteTransaction(transaction)"
-                    class="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    :icon="Trash2"
                     title="Excluir"
-                  >
-                    <Trash2 class="w-4 h-4" />
-                  </button>
-                  <button
+                    class="hover:text-red-600 hover:bg-red-50"
+                  />
+                  <Button
                     v-if="transaction.status === 'PLANNED'"
+                    variant="ghost"
+                    size="sm"
                     @click="markAsPaid(transaction)"
-                    class="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                    :icon="Check"
                     title="Marcar como Pago"
-                  >
-                    <Check class="w-4 h-4" />
-                  </button>
+                    class="hover:text-emerald-600 hover:bg-emerald-50"
+                  />
                 </div>
               </td>
             </tr>
@@ -315,44 +282,49 @@
         </table>
       </div>
 
-      <!-- Pagination -->
-      <div
-        class="flex items-center justify-between px-6 py-3 bg-gray-50 border-t border-gray-200"
-      >
-        <div class="flex items-center">
-          <p class="text-sm text-gray-700">
-            Mostrando {{ (currentPage - 1) * itemsPerPage + 1 }} a
-            {{
-              Math.min(currentPage * itemsPerPage, filteredTransactions.length)
-            }}
-            de {{ filteredTransactions.length }} resultados
-          </p>
+      <template #footer>
+        <!-- Pagination -->
+        <div
+          class="flex items-center justify-between px-6 py-3 bg-gray-50 border-t border-gray-200"
+        >
+          <div class="flex items-center">
+            <p class="text-sm text-gray-700">
+              Mostrando {{ (currentPage - 1) * itemsPerPage + 1 }} a
+              {{
+                Math.min(
+                  currentPage * itemsPerPage,
+                  filteredTransactions.length
+                )
+              }}
+              de {{ filteredTransactions.length }} resultados
+            </p>
+          </div>
+          <div class="flex items-center space-x-2">
+            <button
+              @click="currentPage--"
+              :disabled="currentPage === 1"
+              class="btn-secondary text-sm"
+              :class="{ 'opacity-50 cursor-not-allowed': currentPage === 1 }"
+            >
+              Anterior
+            </button>
+            <span class="text-sm text-gray-700"
+              >{{ currentPage }} de {{ totalPages }}</span
+            >
+            <button
+              @click="currentPage++"
+              :disabled="currentPage === totalPages"
+              class="btn-secondary text-sm"
+              :class="{
+                'opacity-50 cursor-not-allowed': currentPage === totalPages,
+              }"
+            >
+              Próximo
+            </button>
+          </div>
         </div>
-        <div class="flex items-center space-x-2">
-          <button
-            @click="currentPage--"
-            :disabled="currentPage === 1"
-            class="btn-secondary text-sm"
-            :class="{ 'opacity-50 cursor-not-allowed': currentPage === 1 }"
-          >
-            Anterior
-          </button>
-          <span class="text-sm text-gray-700"
-            >{{ currentPage }} de {{ totalPages }}</span
-          >
-          <button
-            @click="currentPage++"
-            :disabled="currentPage === totalPages"
-            class="btn-secondary text-sm"
-            :class="{
-              'opacity-50 cursor-not-allowed': currentPage === totalPages,
-            }"
-          >
-            Próximo
-          </button>
-        </div>
-      </div>
-    </div>
+      </template>
+    </Card>
 
     <!-- Add/Edit Transaction Modal -->
     <TransactionModal
@@ -369,6 +341,14 @@
 import { computed, onMounted, ref, watch } from "vue";
 import { useTransactionStore } from "../stores/transactionStore";
 import TransactionModal from "../components/TransactionModal.vue";
+import {
+  Button,
+  Card,
+  Badge,
+  PageHeader,
+  Input,
+  Select,
+} from "../components/ui";
 import {
   CreditCard,
   Plus as PlusIcon,
