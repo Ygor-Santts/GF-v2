@@ -5,17 +5,23 @@ import Financing from "../models/Financing";
 const router = Router();
 
 const finSchema = z.object({
-  description: z.string(),
+  description: z.string().min(1, "Descrição é obrigatória"),
   type: z.enum(["LOAN", "FINANCING", "CREDIT_CARD"]),
-  originalAmount: z.number().positive(),
-  outstandingBalance: z.number().positive(),
-  installmentAmount: z.number().positive(),
-  totalInstallments: z.number().int().positive(),
-  paidInstallments: z.number().int().min(0).optional(),
-  interestRate: z.number().min(0).max(100),
-  startDate: z.string(),
-  endDate: z.string(),
-  isActive: z.boolean().optional(),
+  originalAmount: z.number().positive("Valor original deve ser positivo"),
+  outstandingBalance: z.number().min(0, "Saldo devedor não pode ser negativo"),
+  installmentAmount: z.number().positive("Valor da parcela deve ser positivo"),
+  totalInstallments: z
+    .number()
+    .int()
+    .positive("Total de parcelas deve ser positivo"),
+  paidInstallments: z.number().int().min(0).default(0),
+  interestRate: z
+    .number()
+    .min(0)
+    .max(100, "Taxa de juros deve estar entre 0 e 100%"),
+  startDate: z.string().min(1, "Data de início é obrigatória"),
+  endDate: z.string().min(1, "Data de fim é obrigatória"),
+  isActive: z.boolean().default(true),
   // Campos de compatibilidade
   name: z.string().optional(),
   account: z.string().optional(),
@@ -26,27 +32,7 @@ const finSchema = z.object({
 router.get("/", async (_req, res) => {
   try {
     const financings = await Financing.find().sort({ createdAt: -1 }).lean();
-
-    // Mapear para o formato esperado pelo frontend
-    const mappedFinancings = financings.map((item) => ({
-      _id: item._id,
-      description: item.description || item.name,
-      type: item.type || "FINANCING",
-      originalAmount:
-        item.originalAmount || item.installmentAmount * item.totalInstallments,
-      outstandingBalance: item.outstandingBalance || item.originalAmount,
-      installmentAmount: item.installmentAmount,
-      totalInstallments: item.totalInstallments,
-      paidInstallments: item.paidInstallments || 0,
-      interestRate: item.interestRate || 0,
-      startDate: item.startDate,
-      endDate: item.endDate,
-      isActive: item.isActive !== false,
-      createdAt: item.createdAt,
-      updatedAt: item.updatedAt,
-    }));
-
-    res.json(mappedFinancings);
+    res.json(financings);
   } catch (error) {
     console.error("Erro ao buscar financiamentos:", error);
     res.status(500).json({ error: "Erro interno do servidor" });
@@ -102,28 +88,7 @@ router.get("/:id", async (req, res) => {
       return res.status(404).json({ error: "Financiamento não encontrado" });
     }
 
-    // Mapear para o formato esperado pelo frontend
-    const mapped = {
-      _id: financing._id,
-      description: financing.description || financing.name,
-      type: financing.type || "FINANCING",
-      originalAmount:
-        financing.originalAmount ||
-        financing.installmentAmount * financing.totalInstallments,
-      outstandingBalance:
-        financing.outstandingBalance || financing.originalAmount,
-      installmentAmount: financing.installmentAmount,
-      totalInstallments: financing.totalInstallments,
-      paidInstallments: financing.paidInstallments || 0,
-      interestRate: financing.interestRate || 0,
-      startDate: financing.startDate,
-      endDate: financing.endDate,
-      isActive: financing.isActive !== false,
-      createdAt: financing.createdAt,
-      updatedAt: financing.updatedAt,
-    };
-
-    res.json(mapped);
+    res.json(financing);
   } catch (error) {
     console.error("Erro ao buscar financiamento:", error);
     res.status(500).json({ error: "Erro interno do servidor" });
@@ -172,7 +137,7 @@ router.get("/:id/payments", async (req, res) => {
 // POST /api/financing - Criar novo financiamento
 router.post("/", async (req, res) => {
   try {
-  const parsed = finSchema.safeParse(req.body);
+    const parsed = finSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({
         error: "Dados inválidos",
@@ -181,7 +146,7 @@ router.post("/", async (req, res) => {
     }
 
     const data = parsed.data;
-    const payload: any = {
+    const payload = {
       description: data.description,
       type: data.type,
       originalAmount: data.originalAmount,
@@ -194,32 +159,13 @@ router.post("/", async (req, res) => {
       endDate: new Date(data.endDate),
       isActive: data.isActive !== false,
       // Campos de compatibilidade
-      name: data.description || data.name,
+      name: data.description,
       account: data.account,
-      category: data.category,
+      category: data.category || "Financiamentos",
     };
 
     const doc = await Financing.create(payload);
-
-    // Retornar no formato esperado pelo frontend
-    const response = {
-      _id: doc._id,
-      description: doc.description || doc.name,
-      type: doc.type || "FINANCING",
-      originalAmount: doc.originalAmount,
-      outstandingBalance: doc.outstandingBalance,
-      installmentAmount: doc.installmentAmount,
-      totalInstallments: doc.totalInstallments,
-      paidInstallments: doc.paidInstallments || 0,
-      interestRate: doc.interestRate || 0,
-      startDate: doc.startDate,
-      endDate: doc.endDate,
-      isActive: doc.isActive !== false,
-      createdAt: doc.createdAt,
-      updatedAt: doc.updatedAt,
-    };
-
-    res.status(201).json(response);
+    res.status(201).json(doc);
   } catch (error) {
     console.error("Erro ao criar financiamento:", error);
     res.status(500).json({ error: "Erro interno do servidor" });
@@ -389,8 +335,8 @@ router.post("/:id/early-payment", async (req, res) => {
 // PUT /api/financing/:id - Atualizar financiamento
 router.put("/:id", async (req, res) => {
   try {
-  const { id } = req.params;
-  const parsed = finSchema.partial().safeParse(req.body);
+    const { id } = req.params;
+    const parsed = finSchema.partial().safeParse(req.body);
 
     if (!parsed.success) {
       return res.status(400).json({
@@ -419,25 +365,7 @@ router.put("/:id", async (req, res) => {
       return res.status(404).json({ error: "Financiamento não encontrado" });
     }
 
-    // Retornar no formato esperado pelo frontend
-    const response = {
-      _id: updated._id,
-      description: updated.description || updated.name,
-      type: updated.type || "FINANCING",
-      originalAmount: updated.originalAmount,
-      outstandingBalance: updated.outstandingBalance,
-      installmentAmount: updated.installmentAmount,
-      totalInstallments: updated.totalInstallments,
-      paidInstallments: updated.paidInstallments || 0,
-      interestRate: updated.interestRate || 0,
-      startDate: updated.startDate,
-      endDate: updated.endDate,
-      isActive: updated.isActive !== false,
-      createdAt: updated.createdAt,
-      updatedAt: updated.updatedAt,
-    };
-
-    res.json(response);
+    res.json(updated);
   } catch (error) {
     console.error("Erro ao atualizar financiamento:", error);
     res.status(500).json({ error: "Erro interno do servidor" });
@@ -447,14 +375,14 @@ router.put("/:id", async (req, res) => {
 // DELETE /api/financing/:id - Deletar financiamento
 router.delete("/:id", async (req, res) => {
   try {
-  const { id } = req.params;
+    const { id } = req.params;
     const deleted = await Financing.findByIdAndDelete(id);
 
     if (!deleted) {
       return res.status(404).json({ error: "Financiamento não encontrado" });
     }
 
-  res.status(204).send();
+    res.status(204).send();
   } catch (error) {
     console.error("Erro ao deletar financiamento:", error);
     res.status(500).json({ error: "Erro interno do servidor" });

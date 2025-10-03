@@ -1,253 +1,209 @@
 <template>
   <div class="space-y-6 animate-fade-in">
     <!-- Header -->
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        <h1 class="text-3xl font-bold text-gray-900">Financiamentos</h1>
-        <p class="mt-1 text-sm text-gray-500">
-          Gerencie seus financiamentos e empréstimos
-        </p>
-      </div>
-      <button @click="showAddModal = true" class="mt-4 sm:mt-0 btn-primary">
-        <PlusIcon class="w-4 h-4 mr-2" />
-        Novo Financiamento
-      </button>
-    </div>
+    <PageHeader
+      title="Financiamentos"
+      description="Gerencie seus financiamentos e empréstimos"
+      :icon="FileText"
+      variant="blue"
+    />
 
     <!-- Summary Cards -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-      <div class="card">
-        <div class="flex items-center">
-          <div class="flex-shrink-0">
-            <div
-              class="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center"
-            >
-              <DocumentTextIcon class="w-5 h-5 text-primary-600" />
-            </div>
-          </div>
-          <div class="ml-4">
-            <p class="text-sm font-medium text-gray-500">
-              Total Financiamentos
-            </p>
-            <p class="text-2xl font-semibold text-gray-900">
-              {{ financings.length }}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="flex items-center">
-          <div class="flex-shrink-0">
-            <div
-              class="w-8 h-8 bg-danger-100 rounded-lg flex items-center justify-center"
-            >
-              <BanknotesIcon class="w-5 h-5 text-danger-600" />
-            </div>
-          </div>
-          <div class="ml-4">
-            <p class="text-sm font-medium text-gray-500">Saldo Devedor</p>
-            <p class="text-2xl font-semibold text-danger-600">
-              {{ formatCurrency(totalOutstandingBalance) }}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="flex items-center">
-          <div class="flex-shrink-0">
-            <div
-              class="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center"
-            >
-              <CalendarIcon class="w-5 h-5 text-yellow-600" />
-            </div>
-          </div>
-          <div class="ml-4">
-            <p class="text-sm font-medium text-gray-500">Parcela Mensal</p>
-            <p class="text-2xl font-semibold text-yellow-600">
-              {{ formatCurrency(totalMonthlyPayment) }}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="flex items-center">
-          <div class="flex-shrink-0">
-            <div
-              class="w-8 h-8 bg-success-100 rounded-lg flex items-center justify-center"
-            >
-              <CheckCircleIcon class="w-5 h-5 text-success-600" />
-            </div>
-          </div>
-          <div class="ml-4">
-            <p class="text-sm font-medium text-gray-500">Valor Pago</p>
-            <p class="text-2xl font-semibold text-success-600">
-              {{ formatCurrency(totalPaidAmount) }}
-            </p>
-          </div>
-        </div>
-      </div>
+      <MetricCard
+        title="Total Financiamentos"
+        :value="financings.length.toString()"
+        :icon="FileText"
+        variant="blue"
+      />
+      <MetricCard
+        title="Saldo Devedor"
+        :value="formatCurrency(totalOutstandingBalance)"
+        :icon="DollarSign"
+        variant="red"
+      />
+      <MetricCard
+        title="Parcela Mensal"
+        :value="formatCurrency(totalMonthlyPayment)"
+        :icon="Calendar"
+        variant="yellow"
+      />
+      <MetricCard
+        title="Valor Pago"
+        :value="formatCurrency(totalPaidAmount)"
+        :icon="CheckCircle"
+        variant="green"
+      />
     </div>
 
     <!-- Financings List -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <div
-        v-for="financing in financings"
-        :key="financing._id"
-        class="card hover:shadow-lg transition-shadow duration-200"
-      >
-        <div class="flex items-start justify-between mb-4">
-          <div class="flex-1">
-            <h3 class="text-lg font-semibold text-gray-900 mb-1">
-              {{ financing.description }}
-            </h3>
-            <p class="text-sm text-gray-500">{{ financing.type }}</p>
-          </div>
-          <div class="flex items-center space-x-2">
-            <span
-              class="badge"
-              :class="
-                financing.isActive &&
-                financing.paidInstallments < financing.totalInstallments
-                  ? 'badge-success'
-                  : 'badge-info'
-              "
-            >
-              {{ getStatusLabel(financing) }}
-            </span>
-            <div class="flex items-center space-x-1">
-              <button
-                @click="editFinancing(financing)"
-                class="p-1 text-gray-400 hover:text-primary-600"
-              >
-                <PencilIcon class="w-4 h-4" />
-              </button>
-              <button
-                @click="deleteFinancing(financing)"
-                class="p-1 text-gray-400 hover:text-danger-600"
-              >
-                <TrashIcon class="w-4 h-4" />
-              </button>
+    <Card>
+      <template #header>
+        <div class="flex items-center justify-between">
+          <h3 class="text-lg font-semibold text-gray-900">
+            Meus Financiamentos
+          </h3>
+          <Button @click="showAddModal = true" :icon="Plus">
+            Novo Financiamento
+          </Button>
+        </div>
+      </template>
+
+      <div class="space-y-4">
+        <div
+          v-for="financing in financings"
+          :key="financing._id"
+          class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow duration-200"
+        >
+          <div class="flex items-start justify-between mb-4">
+            <div class="flex-1">
+              <h4 class="text-lg font-semibold text-gray-900 mb-1">
+                {{ financing.description }}
+              </h4>
+              <Badge :variant="getTypeVariant(financing.type)">
+                {{ getTypeLabel(financing.type) }}
+              </Badge>
+            </div>
+            <div class="flex items-center space-x-2">
+              <Badge :variant="getStatusVariant(financing)">
+                {{ getStatusLabel(financing) }}
+              </Badge>
+              <div class="flex items-center space-x-1">
+                <Button
+                  @click="editFinancing(financing)"
+                  variant="ghost"
+                  size="sm"
+                  :icon="Edit"
+                />
+                <Button
+                  @click="deleteFinancing(financing)"
+                  variant="ghost"
+                  size="sm"
+                  :icon="Trash2"
+                />
+              </div>
             </div>
           </div>
-        </div>
 
-        <!-- Progress Bar -->
-        <div class="mb-4">
-          <div
-            class="flex items-center justify-between text-sm text-gray-600 mb-1"
-          >
-            <span>Progresso</span>
-            <span
-              >{{ financing.paidInstallments }}/{{
-                financing.totalInstallments
-              }}
-              parcelas</span
-            >
-          </div>
-          <div class="w-full bg-gray-200 rounded-full h-2">
+          <!-- Progress Bar -->
+          <div class="mb-4">
             <div
-              class="bg-primary-600 h-2 rounded-full transition-all duration-500"
-              :style="{ width: getProgressPercentage(financing) + '%' }"
-            ></div>
+              class="flex items-center justify-between text-sm text-gray-600 mb-1"
+            >
+              <span>Progresso</span>
+              <span>
+                {{ financing.paidInstallments }}/{{
+                  financing.totalInstallments
+                }}
+                parcelas
+              </span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2">
+              <div
+                class="bg-blue-600 h-2 rounded-full transition-all duration-500"
+                :style="{ width: getProgressPercentage(financing) + '%' }"
+              ></div>
+            </div>
+            <div
+              class="flex items-center justify-between text-xs text-gray-500 mt-1"
+            >
+              <span
+                >{{ getProgressPercentage(financing).toFixed(1) }}%
+                concluído</span
+              >
+              <span
+                >{{ getRemainingInstallments(financing) }} parcelas
+                restantes</span
+              >
+            </div>
           </div>
+
+          <!-- Financial Details -->
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+            <div>
+              <p class="text-xs text-gray-500">Valor Original</p>
+              <p class="text-sm font-semibold text-gray-900">
+                {{ formatCurrency(financing.originalAmount) }}
+              </p>
+            </div>
+            <div>
+              <p class="text-xs text-gray-500">Saldo Devedor</p>
+              <p class="text-sm font-semibold text-red-600">
+                {{ formatCurrency(financing.outstandingBalance) }}
+              </p>
+            </div>
+            <div>
+              <p class="text-xs text-gray-500">Parcela</p>
+              <p class="text-sm font-semibold text-yellow-600">
+                {{ formatCurrency(financing.installmentAmount) }}
+              </p>
+            </div>
+            <div>
+              <p class="text-xs text-gray-500">Taxa de Juros</p>
+              <p class="text-sm font-semibold text-gray-900">
+                {{ financing.interestRate }}% a.m.
+              </p>
+            </div>
+          </div>
+
+          <!-- Dates -->
           <div
-            class="flex items-center justify-between text-xs text-gray-500 mt-1"
+            class="grid grid-cols-2 gap-4 text-xs text-gray-500 border-t border-gray-100 pt-3"
           >
-            <span
-              >{{ getProgressPercentage(financing).toFixed(1) }}%
-              concluído</span
-            >
-            <span
-              >{{ getRemainingInstallments(financing) }} parcelas
-              restantes</span
-            >
+            <div>
+              <span class="font-medium">Início:</span>
+              {{ formatDate(financing.startDate) }}
+            </div>
+            <div>
+              <span class="font-medium">Próximo vencimento:</span>
+              {{ getNextDueDate(financing) }}
+            </div>
           </div>
-        </div>
 
-        <!-- Financial Details -->
-        <div class="grid grid-cols-2 gap-4 mb-4">
-          <div>
-            <p class="text-xs text-gray-500">Valor Original</p>
-            <p class="text-sm font-semibold text-gray-900">
-              {{ formatCurrency(financing.originalAmount) }}
-            </p>
-          </div>
-          <div>
-            <p class="text-xs text-gray-500">Saldo Devedor</p>
-            <p class="text-sm font-semibold text-danger-600">
-              {{ formatCurrency(financing.outstandingBalance) }}
-            </p>
-          </div>
-          <div>
-            <p class="text-xs text-gray-500">Parcela</p>
-            <p class="text-sm font-semibold text-yellow-600">
-              {{ formatCurrency(financing.installmentAmount) }}
-            </p>
-          </div>
-          <div>
-            <p class="text-xs text-gray-500">Taxa de Juros</p>
-            <p class="text-sm font-semibold text-gray-900">
-              {{ financing.interestRate }}% a.m.
-            </p>
-          </div>
-        </div>
-
-        <!-- Dates -->
-        <div
-          class="grid grid-cols-2 gap-4 text-xs text-gray-500 border-t border-gray-100 pt-3"
-        >
-          <div>
-            <span class="font-medium">Início:</span>
-            {{ formatDate(financing.startDate) }}
-          </div>
-          <div>
-            <span class="font-medium">Próximo vencimento:</span>
-            {{ getNextDueDate(financing) }}
-          </div>
-        </div>
-
-        <!-- Actions -->
-        <div
-          class="flex items-center justify-between mt-4 pt-3 border-t border-gray-100"
-        >
-          <button @click="viewDetails(financing)" class="btn-secondary text-sm">
-            <EyeIcon class="w-4 h-4 mr-2" />
-            Ver Detalhes
-          </button>
-          <button
-            v-if="
-              financing.isActive &&
-              financing.paidInstallments < financing.totalInstallments
-            "
-            @click="payInstallment(financing)"
-            class="btn-success text-sm"
+          <!-- Actions -->
+          <div
+            class="flex items-center justify-between mt-4 pt-3 border-t border-gray-100"
           >
-            <CreditCardIcon class="w-4 h-4 mr-2" />
-            Pagar Parcela
-          </button>
+            <Button
+              @click="viewDetails(financing)"
+              variant="secondary"
+              size="sm"
+              :icon="Eye"
+            >
+              Ver Detalhes
+            </Button>
+            <Button
+              v-if="
+                financing.isActive &&
+                financing.paidInstallments < financing.totalInstallments
+              "
+              @click="payInstallment(financing)"
+              variant="success"
+              size="sm"
+              :icon="CreditCard"
+            >
+              Pagar Parcela
+            </Button>
+          </div>
         </div>
       </div>
-    </div>
 
-    <!-- Empty state -->
-    <div v-if="financings.length === 0" class="card text-center py-12">
-      <DocumentTextIcon class="mx-auto h-12 w-12 text-gray-400" />
-      <h3 class="mt-2 text-sm font-medium text-gray-900">
-        Nenhum financiamento cadastrado
-      </h3>
-      <p class="mt-1 text-sm text-gray-500">
-        Comece adicionando seu primeiro financiamento.
-      </p>
-      <div class="mt-6">
-        <button @click="showAddModal = true" class="btn-primary">
-          <PlusIcon class="w-4 h-4 mr-2" />
-          Novo Financiamento
-        </button>
+      <!-- Empty state -->
+      <div v-if="financings.length === 0" class="text-center py-12">
+        <FileText class="mx-auto h-12 w-12 text-gray-400" />
+        <h3 class="mt-2 text-sm font-medium text-gray-900">
+          Nenhum financiamento cadastrado
+        </h3>
+        <p class="mt-1 text-sm text-gray-500">
+          Comece adicionando seu primeiro financiamento.
+        </p>
+        <div class="mt-6">
+          <Button @click="showAddModal = true" :icon="Plus">
+            Novo Financiamento
+          </Button>
+        </div>
       </div>
-    </div>
+    </Card>
 
     <!-- Add/Edit Financing Modal -->
     <FinancingModal
@@ -272,20 +228,17 @@ import { useFinancingStore } from "../stores/financingStore";
 import FinancingModal from "../components/FinancingModal.vue";
 import FinancingDetailsModal from "../components/FinancingDetailsModal.vue";
 import {
-  FileText as DocumentTextIcon,
-  Plus as PlusIcon,
-  Edit as PencilIcon,
-  Eye as EyeIcon,
-  Trash2 as TrashIcon,
-  DollarSign as BanknotesIcon,
-  Calendar as CalendarIcon,
-  TrendingUp,
-  AlertCircle,
-  CheckCircle as CheckCircleIcon,
-  CreditCard as CreditCardIcon,
+  FileText,
+  Plus,
+  Edit,
+  Eye,
+  Trash2,
+  DollarSign,
+  Calendar,
+  CheckCircle,
+  CreditCard,
 } from "lucide-vue-next";
-
-// Import types from service
+import { PageHeader, Card, Button, Badge, MetricCard } from "../components/ui";
 import type { Financing } from "../services/financingService";
 
 // Store
@@ -300,13 +253,10 @@ const selectedFinancing = ref<Financing | null>(null);
 
 // Computed properties
 const financings = computed(() => financingStore.financings);
-
 const totalOutstandingBalance = computed(
   () => financingStore.totalOutstandingBalance
 );
-
 const totalMonthlyPayment = computed(() => financingStore.totalMonthlyPayments);
-
 const totalPaidAmount = computed(() => financingStore.totalPaidAmount);
 
 // Utility functions
@@ -321,6 +271,24 @@ const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString("pt-BR");
 };
 
+const getTypeLabel = (type: string) => {
+  const labels = {
+    LOAN: "Empréstimo",
+    FINANCING: "Financiamento",
+    CREDIT_CARD: "Cartão de Crédito",
+  };
+  return labels[type as keyof typeof labels] || type;
+};
+
+const getTypeVariant = (type: string) => {
+  const variants = {
+    LOAN: "blue",
+    FINANCING: "green",
+    CREDIT_CARD: "purple",
+  };
+  return variants[type as keyof typeof variants] || "gray";
+};
+
 const getStatusLabel = (financing: Financing) => {
   if (!financing.isActive) {
     return "Quitado";
@@ -329,6 +297,16 @@ const getStatusLabel = (financing: Financing) => {
     return "Quitado";
   }
   return "Ativo";
+};
+
+const getStatusVariant = (financing: Financing) => {
+  if (
+    !financing.isActive ||
+    financing.paidInstallments >= financing.totalInstallments
+  ) {
+    return "green";
+  }
+  return "blue";
 };
 
 const getProgressPercentage = (financing: Financing) => {

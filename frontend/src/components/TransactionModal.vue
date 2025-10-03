@@ -1,266 +1,212 @@
 <template>
-  <div
-    v-if="show"
-    class="fixed inset-0 z-50 overflow-y-auto"
-    aria-labelledby="modal-title"
-    role="dialog"
-    aria-modal="true"
+  <Modal
+    :show="show"
+    :title="isEditing ? 'Editar Transação' : 'Nova Transação'"
+    subtitle="Registre uma nova transação financeira"
+    :icon="CreditCard"
+    :icon-variant="form.type === 'INCOME' ? 'green' : 'red'"
+    size="lg"
+    @close="$emit('close')"
   >
-    <div
-      class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0"
-    >
-      <!-- Background overlay -->
-      <div
-        class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
-        @click="$emit('close')"
-      ></div>
-
-      <!-- Modal panel -->
-      <div
-        class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full animate-bounce-in"
-      >
-        <form @submit.prevent="handleSubmit">
-          <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-            <div class="sm:flex sm:items-start">
-              <div
-                class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-primary-100 sm:mx-0 sm:h-10 sm:w-10"
-              >
-                <CreditCard class="h-6 w-6 text-primary-600" />
-              </div>
-              <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left flex-1">
-                <h3
-                  class="text-lg leading-6 font-medium text-gray-900"
-                  id="modal-title"
-                >
-                  {{ isEditing ? "Editar Transação" : "Nova Transação" }}
-                </h3>
-                <div class="mt-4 space-y-4">
-                  <!-- Transaction Type -->
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2"
-                      >Tipo</label
-                    >
-                    <div class="grid grid-cols-2 gap-3">
-                      <button
-                        type="button"
-                        @click="form.type = 'INCOME'"
-                        class="flex items-center justify-center px-4 py-2 border rounded-lg text-sm font-medium transition-colors duration-200"
-                        :class="
-                          form.type === 'INCOME'
-                            ? 'border-success-500 bg-success-50 text-success-700'
-                            : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
-                        "
-                      >
-                        <ArrowUp class="w-4 h-4 mr-2" />
-                        Receita
-                      </button>
-                      <button
-                        type="button"
-                        @click="form.type = 'EXPENSE'"
-                        class="flex items-center justify-center px-4 py-2 border rounded-lg text-sm font-medium transition-colors duration-200"
-                        :class="
-                          form.type === 'EXPENSE'
-                            ? 'border-danger-500 bg-danger-50 text-danger-700'
-                            : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
-                        "
-                      >
-                        <ArrowDown class="w-4 h-4 mr-2" />
-                        Gasto
-                      </button>
-                    </div>
-                  </div>
-
-                  <!-- Date -->
-                  <div>
-                    <label
-                      for="date"
-                      class="block text-sm font-medium text-gray-700 mb-1"
-                      >Data</label
-                    >
-                    <input
-                      id="date"
-                      v-model="form.date"
-                      type="date"
-                      required
-                      class="input"
-                    />
-                  </div>
-
-                  <!-- Category -->
-                  <div>
-                    <label
-                      for="category"
-                      class="block text-sm font-medium text-gray-700 mb-1"
-                      >Categoria</label
-                    >
-                    <div class="relative">
-                      <input
-                        id="category"
-                        v-model="form.category"
-                        type="text"
-                        required
-                        list="categories"
-                        placeholder="Digite ou selecione uma categoria"
-                        class="input"
-                      />
-                      <datalist id="categories">
-                        <option
-                          v-for="category in categories"
-                          :key="category"
-                          :value="category"
-                        />
-                        <option value="Alimentação" />
-                        <option value="Transporte" />
-                        <option value="Moradia" />
-                        <option value="Lazer" />
-                        <option value="Saúde" />
-                        <option value="Educação" />
-                        <option value="Vestuário" />
-                        <option value="Investimentos" />
-                        <option value="Outros" />
-                      </datalist>
-                    </div>
-                  </div>
-
-                  <!-- Description -->
-                  <div>
-                    <label
-                      for="description"
-                      class="block text-sm font-medium text-gray-700 mb-1"
-                      >Descrição</label
-                    >
-                    <textarea
-                      id="description"
-                      v-model="form.description"
-                      rows="2"
-                      placeholder="Descrição opcional da transação"
-                      class="input resize-none"
-                    ></textarea>
-                  </div>
-
-                  <!-- Amount -->
-                  <div class="grid grid-cols-2 gap-4">
-                    <div>
-                      <label
-                        for="plannedAmount"
-                        class="block text-sm font-medium text-gray-700 mb-1"
-                        >Valor Planejado</label
-                      >
-                      <div class="relative">
-                        <span
-                          class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500"
-                          >R$</span
-                        >
-                        <input
-                          id="plannedAmount"
-                          v-model.number="form.plannedAmount"
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          placeholder="0,00"
-                          class="input pl-10"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label
-                        for="amount"
-                        class="block text-sm font-medium text-gray-700 mb-1"
-                        >Valor Real</label
-                      >
-                      <div class="relative">
-                        <span
-                          class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500"
-                          >R$</span
-                        >
-                        <input
-                          id="amount"
-                          v-model.number="form.amount"
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          placeholder="0,00"
-                          class="input pl-10"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Status and Options -->
-                  <div class="grid grid-cols-2 gap-4">
-                    <div>
-                      <label
-                        for="status"
-                        class="block text-sm font-medium text-gray-700 mb-1"
-                        >Status</label
-                      >
-                      <select id="status" v-model="form.status" class="select">
-                        <option value="PLANNED">Planejado</option>
-                        <option value="PAID">Pago</option>
-                      </select>
-                    </div>
-                    <div class="flex items-end">
-                      <label class="flex items-center">
-                        <input
-                          v-model="form.isFixed"
-                          type="checkbox"
-                          class="rounded border-gray-300 text-primary-600 shadow-sm focus:border-primary-300 focus:ring focus:ring-primary-200 focus:ring-opacity-50"
-                        />
-                        <span class="ml-2 text-sm text-gray-700"
-                          >Transação fixa</span
-                        >
-                      </label>
-                    </div>
-                  </div>
-
-                  <!-- Account (optional) -->
-                  <div>
-                    <label
-                      for="account"
-                      class="block text-sm font-medium text-gray-700 mb-1"
-                      >Conta (opcional)</label
-                    >
-                    <input
-                      id="account"
-                      v-model="form.account"
-                      type="text"
-                      placeholder="Ex: Conta Corrente, Cartão de Crédito"
-                      class="input"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Modal Actions -->
-          <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-            <button
-              type="submit"
-              :disabled="loading"
-              class="w-full inline-flex justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-primary-600 text-base font-medium text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <div v-if="loading" class="loading-spinner w-4 h-4 mr-2"></div>
-              {{ isEditing ? "Atualizar" : "Salvar" }}
-            </button>
-            <button
-              type="button"
-              @click="$emit('close')"
-              class="mt-3 w-full inline-flex justify-center rounded-lg border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
-            >
-              Cancelar
-            </button>
-          </div>
-        </form>
+    <form @submit.prevent="handleSubmit" class="space-y-6">
+      <!-- Type Selection -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-3"
+          >Tipo de Transação</label
+        >
+        <div class="grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            @click="form.type = 'INCOME'"
+            class="flex items-center justify-center p-4 border-2 rounded-xl transition-all duration-200 font-medium"
+            :class="
+              form.type === 'INCOME'
+                ? 'border-green-500 bg-green-50 text-green-700 shadow-sm'
+                : 'border-gray-300 hover:border-green-300 hover:bg-green-50'
+            "
+          >
+            <ArrowUp class="w-5 h-5 mr-2" />
+            Receita
+          </button>
+          <button
+            type="button"
+            @click="form.type = 'EXPENSE'"
+            class="flex items-center justify-center p-4 border-2 rounded-xl transition-all duration-200 font-medium"
+            :class="
+              form.type === 'EXPENSE'
+                ? 'border-red-500 bg-red-50 text-red-700 shadow-sm'
+                : 'border-gray-300 hover:border-red-300 hover:bg-red-50'
+            "
+          >
+            <ArrowDown class="w-5 h-5 mr-2" />
+            Despesa
+          </button>
+        </div>
       </div>
-    </div>
-  </div>
+
+      <!-- Description -->
+      <div>
+        <label
+          for="description"
+          class="block text-sm font-medium text-gray-700 mb-2"
+        >
+          Descrição
+        </label>
+        <input
+          id="description"
+          v-model="form.description"
+          type="text"
+          placeholder="Ex: Salário, Aluguel, Supermercado"
+          class="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+        />
+      </div>
+
+      <!-- Category -->
+      <div>
+        <label
+          for="category"
+          class="block text-sm font-medium text-gray-700 mb-2"
+        >
+          Categoria
+        </label>
+        <select
+          id="category"
+          v-model="form.category"
+          required
+          class="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+        >
+          <option value="">Selecione uma categoria</option>
+          <option v-for="cat in categories" :key="cat" :value="cat">
+            {{ cat }}
+          </option>
+        </select>
+      </div>
+
+      <!-- Amount and Date -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label
+            for="amount"
+            class="block text-sm font-medium text-gray-700 mb-2"
+          >
+            Valor
+          </label>
+          <div class="relative">
+            <span
+              class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500"
+            >
+              R$
+            </span>
+            <input
+              id="amount"
+              v-model.number="form.amount"
+              type="number"
+              step="0.01"
+              min="0"
+              required
+              placeholder="0,00"
+              class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+            />
+          </div>
+        </div>
+        <div>
+          <label
+            for="date"
+            class="block text-sm font-medium text-gray-700 mb-2"
+          >
+            Data
+          </label>
+          <input
+            id="date"
+            v-model="form.date"
+            type="date"
+            required
+            class="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+          />
+        </div>
+      </div>
+
+      <!-- Account -->
+      <div>
+        <label
+          for="account"
+          class="block text-sm font-medium text-gray-700 mb-2"
+        >
+          Conta
+        </label>
+        <input
+          id="account"
+          v-model="form.account"
+          type="text"
+          placeholder="Ex: Conta Corrente, Poupança"
+          class="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+        />
+      </div>
+
+      <!-- Status and Fixed -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label
+            for="status"
+            class="block text-sm font-medium text-gray-700 mb-2"
+          >
+            Status
+          </label>
+          <select
+            id="status"
+            v-model="form.status"
+            class="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+          >
+            <option value="PAID">Pago</option>
+            <option value="PLANNED">Planejado</option>
+          </select>
+        </div>
+        <div class="flex items-center">
+          <input
+            id="isFixed"
+            v-model="form.isFixed"
+            type="checkbox"
+            class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+          />
+          <label for="isFixed" class="ml-2 block text-sm text-gray-700">
+            Transação fixa
+          </label>
+        </div>
+      </div>
+    </form>
+
+    <template #footer>
+      <div
+        class="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-3 justify-between p-3"
+      >
+        <Button
+          size="sm"
+          type="button"
+          variant="secondary"
+          @click="$emit('close')"
+          class="mt-3 sm:mt-0"
+        >
+          Cancelar
+        </Button>
+        <Button
+          size="sm"
+          type="submit"
+          :loading="loading"
+          @click="handleSubmit"
+          class="w-full sm:w-auto"
+        >
+          {{ isEditing ? "Atualizar" : "Salvar" }}
+        </Button>
+      </div>
+    </template>
+  </Modal>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
 import { useTransactionStore } from "../stores/transactionStore";
 import { CreditCard, ArrowUp, ArrowDown } from "lucide-vue-next";
+import { Modal, Button } from "../components/ui";
 
 // Props
 interface Transaction {
@@ -302,11 +248,10 @@ const form = ref<Transaction>({
   type: "EXPENSE",
   category: "",
   description: "",
-  plannedAmount: undefined,
-  amount: undefined,
+  amount: 0,
   account: "",
   isFixed: false,
-  status: "PLANNED",
+  status: "PAID",
 });
 
 // Computed
@@ -319,11 +264,10 @@ const resetForm = () => {
     type: "EXPENSE",
     category: "",
     description: "",
-    plannedAmount: undefined,
-    amount: undefined,
+    amount: 0,
     account: "",
     isFixed: false,
-    status: "PLANNED",
+    status: "PAID",
   };
 };
 
@@ -331,27 +275,19 @@ const handleSubmit = async () => {
   try {
     loading.value = true;
 
-    // Prepare data
-    const data = {
-      ...form.value,
-      // Convert negative amounts for expenses to positive (backend expects positive values)
-      plannedAmount: form.value.plannedAmount
-        ? Math.abs(form.value.plannedAmount)
-        : undefined,
-      amount: form.value.amount ? Math.abs(form.value.amount) : undefined,
-    };
-
-    // Use store instead of direct API call
     if (isEditing.value) {
-      await transactionStore.updateTransaction(props.transaction!._id!, data);
+      await transactionStore.updateTransaction(
+        props.transaction!._id!,
+        form.value
+      );
     } else {
-      await transactionStore.createTransaction(data);
+      await transactionStore.createTransaction(form.value);
     }
 
     emit("save");
   } catch (error) {
     console.error("Error saving transaction:", error);
-    // TODO: Show error message to user
+    alert("Erro ao salvar transação");
   } finally {
     loading.value = false;
   }
@@ -366,7 +302,7 @@ watch(
         // Editing existing transaction
         form.value = {
           ...props.transaction,
-          date: props.transaction.date.slice(0, 10), // Format date for input
+          date: props.transaction.date.slice(0, 10),
         };
       } else {
         // Adding new transaction
@@ -375,20 +311,4 @@ watch(
     }
   }
 );
-
-// Auto-fill amount when status changes to PAID
-watch(
-  () => form.value.status,
-  (status) => {
-    if (status === "PAID" && form.value.plannedAmount && !form.value.amount) {
-      form.value.amount = form.value.plannedAmount;
-    }
-  }
-);
-</script>
-
-<script lang="ts">
-export default {
-  name: "TransactionModal",
-};
 </script>

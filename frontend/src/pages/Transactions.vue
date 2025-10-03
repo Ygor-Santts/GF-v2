@@ -18,7 +18,7 @@
           <Button
             size="lg"
             variant="secondary"
-            @click="showAddModal = true"
+            @click="handleOpenAddModal"
             :icon="PlusIcon"
             class="text-black border-black/30 hover:bg-black/20"
           >
@@ -384,10 +384,10 @@
 
     <!-- Add/Edit Transaction Modal -->
     <TransactionModal
-      :show="showAddModal || showEditModal"
-      :transaction="editingTransaction"
+      :show="shouldShowModal"
+      :transaction="modalType === 'edit-transaction' ? modalData : null"
       :categories="categories"
-      @close="closeModal"
+      @close="handleCloseModal"
       @save="handleSave"
     />
   </div>
@@ -396,6 +396,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch, nextTick } from "vue";
 import { useTransactionStore } from "../stores/transactionStore";
+import { useModal } from "../composables/useModal";
 import TransactionModal from "../components/TransactionModal.vue";
 import {
   Button,
@@ -431,6 +432,16 @@ import MetricCard from "../components/ui/MetricCard.vue";
 
 // Store
 const transactionStore = useTransactionStore();
+const { openModal, closeModal, isModalOpen, modalType, modalData } = useModal();
+
+// Computed for modal visibility
+const shouldShowModal = computed(() => {
+  return (
+    isModalOpen.value &&
+    (modalType.value === "add-transaction" ||
+      modalType.value === "edit-transaction")
+  );
+});
 
 // Reactive data
 const categories = ref<string[]>([]);
@@ -442,8 +453,6 @@ const selectedPeriod = ref({
   month: new Date().getMonth() + 1,
   year: new Date().getFullYear(),
 });
-const showAddModal = ref(false);
-const showEditModal = ref(false);
 const editingTransaction = ref<Transaction | null | undefined>(null);
 // Pagination variables
 const currentPage = ref(1);
@@ -660,7 +669,7 @@ const clearFilters = () => {
 
 const editTransaction = (transaction: Transaction) => {
   editingTransaction.value = { ...transaction };
-  showEditModal.value = true;
+  openModal("edit-transaction", transaction);
 };
 
 const deleteTransaction = async (transaction: Transaction) => {
@@ -686,10 +695,13 @@ const markAsPaid = async (transaction: Transaction) => {
   }
 };
 
-const closeModal = () => {
-  showAddModal.value = false;
-  showEditModal.value = false;
+const handleCloseModal = () => {
+  closeModal();
   editingTransaction.value = null;
+};
+
+const handleOpenAddModal = () => {
+  openModal("add-transaction");
 };
 
 // Pagination functions
@@ -717,7 +729,7 @@ const resetPagination = () => {
 
 const handleSave = async () => {
   await loadTransactions();
-  closeModal();
+  handleCloseModal();
 };
 
 const exportTransactions = () => {
