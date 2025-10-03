@@ -8,3 +8,4 @@ export { default as Select } from "./Select.vue";
 export { default as Tooltip } from "./Tooltip.vue";
 export { default as PeriodSelector } from "./PeriodSelector.vue";
 export { default as Modal } from "./Modal.vue";
+export { default as TransactionModal } from "../../components/TransactionModal.vue";

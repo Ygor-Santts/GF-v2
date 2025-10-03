@@ -394,41 +394,41 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch, nextTick } from "vue";
-import { useTransactionStore } from "../stores/transactionStore";
+import { computed, onMounted, ref, watch } from "vue";
+import { MetricCard, TransactionModal } from "../components/ui";
 import { useModal } from "../composables/useModal";
-import TransactionModal from "../components/TransactionModal.vue";
+import { useTransactionStore } from "../stores/transactionStore";
+
 import {
+  ArrowDown,
+  ArrowDownCircle,
+  ArrowUp,
+  ArrowUpCircle,
+  Check,
+  ChevronsUpDown as ChevronUpDown,
+  CreditCard,
+  Download,
+  Edit,
+  Search as MagnifyingGlassIcon,
+  Plus as PlusIcon,
+  Trash2,
+  TrendingDown,
+  TrendingUp,
+  Wallet,
+  X,
+} from "lucide-vue-next";
+import {
+  Badge,
   Button,
   Card,
-  Badge,
-  PageHeader,
   Input,
-  Select,
+  PageHeader,
   PeriodSelector,
+  Select,
 } from "../components/ui";
-import {
-  CreditCard,
-  Plus as PlusIcon,
-  ArrowUpCircle,
-  ArrowDownCircle,
-  TrendingUp,
-  TrendingDown,
-  Wallet,
-  ArrowUp,
-  ArrowDown,
-  Search as MagnifyingGlassIcon,
-  X,
-  Download,
-  ChevronsUpDown as ChevronUpDown,
-  Edit,
-  Trash2,
-  Check,
-} from "lucide-vue-next";
 
 // Import types from service
 import type { Transaction } from "../services/transactionService";
-import MetricCard from "../components/ui/MetricCard.vue";
 
 // Store
 const transactionStore = useTransactionStore();
@@ -557,7 +557,7 @@ const visiblePages = computed(() => {
     return Array.from({ length: total }, (_, i) => i + 1);
   }
 
-  const pages = [];
+  const pages: number[] = [];
 
   // Always show current page and 2 pages on each side
   const start = Math.max(1, current - 2);
@@ -609,7 +609,7 @@ const handlePeriodChange = async (period: { month: number; year: number }) => {
 };
 
 // Data loading
-const loadTransactions = async (page: number = 1) => {
+const loadTransactions = async (_page: number = 1) => {
   try {
     loading.value = true;
     const startDate = new Date(getYear(), getMonth() - 1, 1)
@@ -627,7 +627,7 @@ const loadTransactions = async (page: number = 1) => {
       limit: 1000, // Load more to have all data for local filtering
     };
 
-    const response = await transactionStore.fetchTransactions(apiFilters);
+    await transactionStore.fetchTransactions(apiFilters);
 
     // Extract unique categories
     const uniqueCategories = [
