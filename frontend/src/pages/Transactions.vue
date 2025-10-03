@@ -291,50 +291,92 @@
       </div>
 
       <template #footer>
-        <!-- Load more button or indicators -->
+        <!-- Pagination -->
         <div class="px-6 py-4 bg-gray-50 border-t border-gray-200">
-          <!-- Transaction counter -->
-          <div class="flex items-center justify-between mb-3">
-            <p class="text-sm text-gray-600">
-              Página {{ currentPage }} de {{ totalPages }} -
-              {{ totalTransactions }} transações no total
-            </p>
-          </div>
+          <div class="flex items-center justify-between">
+            <!-- Transaction counter -->
+            <div class="flex items-center">
+              <p class="text-sm text-gray-700">
+                Mostrando {{ (currentPage - 1) * itemsPerPage + 1 }} a
+                {{
+                  Math.min(
+                    currentPage * itemsPerPage,
+                    filteredTransactions.length
+                  )
+                }}
+                de {{ filteredTransactions.length }} resultados
+              </p>
+            </div>
 
-          <!-- Loading indicator -->
-          <div
-            v-if="loadingMore || loading"
-            class="flex items-center justify-center space-x-2"
-          >
-            <div
-              class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"
-            ></div>
-            <span class="text-sm text-gray-600">{{
-              loading
-                ? "Carregando transações..."
-                : "Carregando mais transações..."
-            }}</span>
-          </div>
+            <!-- Pagination controls -->
+            <div v-if="totalPages > 1" class="flex items-center space-x-2">
+              <!-- Previous button -->
+              <button
+                @click="goToPreviousPage"
+                :disabled="currentPage === 1"
+                class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Anterior
+              </button>
 
-          <!-- Load more button -->
-          <div v-else-if="hasMoreTransactions" class="flex justify-center">
-            <Button
-              @click="loadMoreTransactions"
-              variant="secondary"
-              size="sm"
-              :icon="Plus"
-              class="text-gray-700 hover:text-gray-900"
-            >
-              Carregar Mais Transações
-            </Button>
-          </div>
+              <!-- Page numbers -->
+              <div class="flex items-center space-x-1">
+                <!-- First page -->
+                <button
+                  v-if="currentPage > 3"
+                  @click="goToPage(1)"
+                  class="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                >
+                  1
+                </button>
 
-          <!-- End of results indicator -->
-          <div v-else class="flex items-center justify-center space-x-2">
-            <CheckCircle class="w-4 h-4 text-green-500" />
-            <span class="text-sm text-gray-500"
-              >Todas as transações foram carregadas</span
-            >
+                <!-- Ellipsis for large gaps -->
+                <span v-if="currentPage > 4" class="px-2 text-gray-500"
+                  >...</span
+                >
+
+                <!-- Pages around current page -->
+                <button
+                  v-for="page in visiblePages"
+                  :key="page"
+                  @click="goToPage(page)"
+                  class="px-3 py-2 text-sm font-medium rounded-md transition-colors"
+                  :class="{
+                    'bg-blue-600 text-white border border-blue-600':
+                      page === currentPage,
+                    'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50':
+                      page !== currentPage,
+                  }"
+                >
+                  {{ page }}
+                </button>
+
+                <!-- Ellipsis for large gaps -->
+                <span
+                  v-if="currentPage < totalPages - 3"
+                  class="px-2 text-gray-500"
+                  >...</span
+                >
+
+                <!-- Last page -->
+                <button
+                  v-if="currentPage < totalPages - 2"
+                  @click="goToPage(totalPages)"
+                  class="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                >
+                  {{ totalPages }}
+                </button>
+              </div>
+
+              <!-- Next button -->
+              <button
+                @click="goToNextPage"
+                :disabled="currentPage === totalPages"
+                class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Próximo
+              </button>
+            </div>
           </div>
         </div>
       </template>
@@ -406,9 +448,6 @@ const editingTransaction = ref<Transaction | null | undefined>(null);
 // Pagination variables
 const currentPage = ref(1);
 const itemsPerPage = 10;
-const totalPages = ref(0);
-const totalTransactions = ref(0);
-const loadingMore = ref(false);
 const loading = ref(false);
 const sortField = ref("date");
 const sortDirection = ref<"asc" | "desc">("desc");
@@ -496,24 +535,37 @@ const filteredTransactions = computed(() => {
 });
 
 // Pagination computed properties
-const hasMoreTransactions = computed(() => {
-  return currentPage.value < totalPages.value;
+const totalPages = computed(() => {
+  return Math.ceil(filteredTransactions.value.length / itemsPerPage);
+});
+
+const visiblePages = computed(() => {
+  const total = totalPages.value;
+  const current = currentPage.value;
+
+  if (total <= 7) {
+    // Show all pages if total is 7 or less
+    return Array.from({ length: total }, (_, i) => i + 1);
+  }
+
+  const pages = [];
+
+  // Always show current page and 2 pages on each side
+  const start = Math.max(1, current - 2);
+  const end = Math.min(total, current + 2);
+
+  for (let i = start; i <= end; i++) {
+    pages.push(i);
+  }
+
+  return pages;
 });
 
 const displayedTransactions = computed(() => {
-  let filtered = transactionStore.transactions;
-
-  // Apply search filter locally
-  if (filters.value.search) {
-    const searchTerm = filters.value.search.toLowerCase();
-    filtered = filtered.filter(
-      (transaction) =>
-        transaction.description?.toLowerCase().includes(searchTerm) ||
-        transaction.category.toLowerCase().includes(searchTerm)
-    );
-  }
-
-  return filtered;
+  const filtered = filteredTransactions.value;
+  const start = (currentPage.value - 1) * itemsPerPage;
+  const end = start + itemsPerPage;
+  return filtered.slice(start, end);
 });
 
 const totalIncome = computed(() => transactionStore.totalIncome);
@@ -558,24 +610,15 @@ const loadTransactions = async (page: number = 1) => {
       .toISOString()
       .split("T")[0];
 
-    // Prepare filters for API
+    // Load all transactions for the period (no filters in API)
     const apiFilters: any = {
       startDate,
       endDate,
-      page,
-      limit: itemsPerPage,
+      page: 1,
+      limit: 1000, // Load more to have all data for local filtering
     };
 
-    // Add filters if they have values
-    if (filters.value.type) apiFilters.type = filters.value.type;
-    if (filters.value.status) apiFilters.status = filters.value.status;
-    if (filters.value.category) apiFilters.category = filters.value.category;
-
     const response = await transactionStore.fetchTransactions(apiFilters);
-
-    // Update pagination info
-    totalPages.value = transactionStore.pagination.totalPages;
-    totalTransactions.value = transactionStore.pagination.total;
 
     // Extract unique categories
     const uniqueCategories = [
@@ -600,8 +643,8 @@ const sortBy = (field: string) => {
 };
 
 const applyFilters = () => {
+  // Reset pagination when filters change
   currentPage.value = 1;
-  loadTransactions(1);
 };
 
 const clearFilters = () => {
@@ -611,8 +654,8 @@ const clearFilters = () => {
     category: "",
     search: "",
   };
+  // Reset pagination when filters are cleared
   currentPage.value = 1;
-  loadTransactions(1);
 };
 
 const editTransaction = (transaction: Transaction) => {
@@ -650,26 +693,26 @@ const closeModal = () => {
 };
 
 // Pagination functions
-const loadMoreTransactions = async () => {
-  if (loadingMore.value || !hasMoreTransactions.value) return;
+const goToPage = (page: number) => {
+  if (page >= 1 && page <= totalPages.value) {
+    currentPage.value = page;
+  }
+};
 
-  loadingMore.value = true;
-  currentPage.value++;
+const goToPreviousPage = () => {
+  if (currentPage.value > 1) {
+    currentPage.value--;
+  }
+};
 
-  try {
-    await loadTransactions(currentPage.value);
-  } catch (error) {
-    console.error("Error loading more transactions:", error);
-    currentPage.value--; // Revert page on error
-  } finally {
-    loadingMore.value = false;
+const goToNextPage = () => {
+  if (currentPage.value < totalPages.value) {
+    currentPage.value++;
   }
 };
 
 const resetPagination = () => {
   currentPage.value = 1;
-  totalPages.value = 0;
-  totalTransactions.value = 0;
 };
 
 const handleSave = async () => {
