@@ -281,7 +281,11 @@ const handleSubmit = async () => {
         form.value
       );
     } else {
-      await transactionStore.createTransaction(form.value);
+      // Ensure status is always set (required by Transaction type)
+      await transactionStore.createTransaction({
+        ...form.value,
+        status: form.value.status ?? "PLANNED", // fallback to a default if undefined
+      });
     }
 
     emit("save");

@@ -140,7 +140,15 @@
     <!-- Add/Edit Recurring Modal -->
     <RecurringModal
       :show="showAddModal || showEditModal"
-      :recurring="editingRecurring"
+      :recurring="
+        editingRecurring
+          ? {
+              ...editingRecurring,
+              description: editingRecurring.description ?? '',
+            }
+          : null
+      "
+      :categories="categories ?? []"
       @close="closeModal"
       @save="handleSave"
     />
@@ -150,8 +158,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue";
 import { useRecurringStore } from "../stores/recurringStore";
-import RecurringModal from "../components/RecurringModal.vue";
-import RecurringCard from "../components/RecurringCard.vue";
+import { RecurringModal, RecurringCard } from "../components/ui";
 import {
   Card,
   Button,

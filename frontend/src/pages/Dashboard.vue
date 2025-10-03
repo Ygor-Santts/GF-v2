@@ -304,40 +304,33 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, nextTick, computed } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useDashboardStore } from "../stores/dashboardStore";
-import ChartComponent from "../components/ChartComponent.vue";
+
+import {
+  ArrowDownRight,
+  ArrowUpRight,
+  Banknote,
+  BarChart2,
+  BarChart3,
+  CheckCircle,
+  Clock,
+  CreditCard,
+  Eye,
+  PieChart,
+  Plus,
+  RotateCcw,
+  TrendingDown,
+  TrendingUp,
+} from "lucide-vue-next";
 import {
   Button,
   Card,
-  Badge,
+  ChartComponent,
   MetricCard,
   PageHeader,
   PeriodSelector,
 } from "../components/ui";
-import {
-  BarChart2,
-  RefreshCw,
-  Wallet,
-  ArrowUp,
-  ArrowDown,
-  ArrowUpCircle,
-  ArrowDownCircle,
-  TrendingUp,
-  TrendingDown,
-  Hourglass,
-  Clock,
-  Plus,
-  Banknote,
-  PieChart,
-  RotateCcw,
-  BarChart3,
-  ArrowUpRight,
-  ArrowDownRight,
-  CreditCard,
-  CheckCircle,
-  Eye,
-} from "lucide-vue-next";
 
 // Store
 const dashboardStore = useDashboardStore();

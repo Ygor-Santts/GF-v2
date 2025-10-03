@@ -9,3 +9,8 @@ export { default as Tooltip } from "./Tooltip.vue";
 export { default as PeriodSelector } from "./PeriodSelector.vue";
 export { default as Modal } from "./Modal.vue";
 export { default as TransactionModal } from "../../components/TransactionModal.vue";
+export { default as ChartComponent } from "../../components/ChartComponent.vue";
+export { default as FinancingModal } from "../../components/FinancingModal.vue";
+export { default as FinancingDetailsModal } from "../../components/FinancingDetailsModal.vue";
+export { default as RecurringModal } from "../../components/RecurringModal.vue";
+export { default as RecurringCard } from "../../components/RecurringCard.vue";

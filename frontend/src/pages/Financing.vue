@@ -3,36 +3,36 @@
     <!-- Header -->
     <PageHeader
       title="Financiamentos"
-      description="Gerencie seus financiamentos e empréstimos"
-      :icon="FileText"
+      subtitle="Gerencie seus financiamentos e empréstimos"
+      :backgroundIcon="FileText"
       variant="blue"
     />
 
     <!-- Summary Cards -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
       <MetricCard
-        title="Total Financiamentos"
+        label="Total Financiamentos"
         :value="financings.length.toString()"
         :icon="FileText"
-        variant="blue"
+        variant="elevated"
       />
       <MetricCard
-        title="Saldo Devedor"
+        label="Saldo Devedor"
         :value="formatCurrency(totalOutstandingBalance)"
         :icon="DollarSign"
-        variant="red"
+        variant="elevated"
       />
       <MetricCard
-        title="Parcela Mensal"
+        label="Parcela Mensal"
         :value="formatCurrency(totalMonthlyPayment)"
         :icon="Calendar"
-        variant="yellow"
+        variant="elevated"
       />
       <MetricCard
-        title="Valor Pago"
+        label="Valor Pago"
         :value="formatCurrency(totalPaidAmount)"
         :icon="CheckCircle"
-        variant="green"
+        variant="elevated"
       />
     </div>
 
@@ -225,8 +225,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue";
 import { useFinancingStore } from "../stores/financingStore";
-import FinancingModal from "../components/FinancingModal.vue";
-import FinancingDetailsModal from "../components/FinancingDetailsModal.vue";
+import { FinancingModal, FinancingDetailsModal } from "../components/ui";
 import {
   FileText,
   Plus,

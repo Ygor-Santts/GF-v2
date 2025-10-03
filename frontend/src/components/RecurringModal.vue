@@ -282,15 +282,6 @@ const handleSubmit = async () => {
   try {
     loading.value = true;
 
-    if (isEditing.value) {
-      await recurringStore.updateRecurringTransaction(
-        props.recurring!._id!,
-        form.value
-      );
-    } else {
-      await recurringStore.createRecurringTransaction(form.value);
-    }
-
     emit("save");
   } catch (error) {
     console.error("Error saving recurring transaction:", error);
